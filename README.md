@@ -1,2 +1,2 @@
 # LFDeep
-The code or the LFDeep project 
+The code of the LFDeep project 
