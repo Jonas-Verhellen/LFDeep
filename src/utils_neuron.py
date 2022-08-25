@@ -66,3 +66,4 @@ def parse_multiple_sim_experiment_files(sim_experiment_files):
             y_DVT   = np.dstack((y_DVT,y_DVT_curr))
             y_nexus = np.dstack((y_nexus,y_nexus_curr))
     return X, y_spike, y_soma, y_DVT, y_nexus
+

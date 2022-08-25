@@ -267,24 +267,23 @@ class MMoE(nn.Module):
         else:
             return final_outputs
 
-class Expert_CNN(nn.Module):
-    # Keras to Pytorch: tricky, Kosio please double and triple check
-    def __init__(self, input_window_size, num_segments, num_syn_types, num_filters, kernel_size, dilation, stride):
+
+class Expert_CNN(nn.Module): 
+    def __init__(self, input_window_size, num_segments, num_syn_types, num_filters, kernel_size, dilation, stride,activation_function=nn.ReLU()):
         super(Expert_CNN, self).__init__()
         self.padding = (kernel_size - 1) * dilation
         self.input_channels = num_segments * num_syn_types
-        self.cnn = nn.Sequential(
-            nn.Conv1d(self.input_channels, num_filters[1], kernel_size, padding=self.padding, dilation=dilation, stride=stride),
-            nn.ReLU(),
-            nn.BatchNorm1d(num_filters[1]),
-            nn.Conv1d(num_filters[1], num_filters[2], kernel_size, padding=self.padding, dilation=dilation, stride=stride),
-            nn.ReLU(),
-            nn.BatchNorm1d(num_filters[2]),
-            nn.Conv1d(num_filters[2], num_filters[3], kernel_size, padding=self.padding, dilation=dilation, stride=stride),
-            nn.ReLU(), 
-            nn.BatchNorm1d(num_filters[3]),
-        )
-    
-    def forward(self, x):
-        out = self.cnn(x) # do we need to transform anything here to feed it to the towers? 
+        self.activation_function = activation_function
+        n_layers = len(num_filters)
+        num_filters.insert(0,self.input_channels)
+        layer_list = []
+        for i in range(n_layers):
+            layer_list.append(nn.Conv1d(num_filters[i],num_filters[i+1],kernel_size,padding=self.padding, dilation=dilation,
+                                      stride=stride))
+            layer_list.append(nn.ReLU())
+            layer_list.append(nn.BatchNorm1d(num_filters[i+1]))            
+        self.cnn = nn.Sequential(*layer_list)
+        
+    def forward(self,x):
+        out = self.cnn(x) 
         return out
