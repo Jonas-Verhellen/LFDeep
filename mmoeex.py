@@ -269,21 +269,24 @@ class MMoE(nn.Module):
 
 
 class Expert_CNN(nn.Module): 
-    def __init__(self, input_window_size, num_segments, num_syn_types, num_filters, kernel_size, dilation, stride,activation_function=nn.ReLU()):
+    def __init__(self, input_window_size=400, num_segments=1278, num_syn_types=1, filter_sizes=[64,32,16], kernel_size=54, dilation=1, stride=1,activation_function=nn.ReLU()):
         super(Expert_CNN, self).__init__()
         self.padding = (kernel_size - 1) * dilation
         self.input_channels = num_segments * num_syn_types
         self.activation_function = activation_function
-        n_layers = len(num_filters)
-        num_filters.insert(0,self.input_channels)
+        n_layers = len(filter_sizes)
+        filter_sizes.insert(0,self.input_channels)
         layer_list = []
         for i in range(n_layers):
-            layer_list.append(nn.Conv1d(num_filters[i],num_filters[i+1],kernel_size,padding=self.padding, dilation=dilation,
+            layer_list.append(nn.Conv1d(filter_sizes[i],filter_sizes[i+1],kernel_size,padding=self.padding, dilation=dilation,
                                       stride=stride))
             layer_list.append(nn.ReLU())
-            layer_list.append(nn.BatchNorm1d(num_filters[i+1]))            
+            layer_list.append(nn.BatchNorm1d(filter_sizes[i+1]))            
         self.cnn = nn.Sequential(*layer_list)
         
     def forward(self,x):
         out = self.cnn(x) 
         return out
+    
+    
+    
