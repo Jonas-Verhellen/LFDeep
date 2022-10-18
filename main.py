@@ -1,25 +1,20 @@
 import sys
 import random
 import pandas as pd
-
 import numpy as np
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 from torch.utils.tensorboard import SummaryWriter
-from torchmeta.modules import MetaModule
-
 from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
-
 import copy
 import yaml
 import time
 import warnings
+from tqdm import tqdm
 
 sys.path.append("src/")
 from mmoeex import MMoE, MMoETowers, MMoEEx
@@ -30,9 +25,8 @@ from data_preprocessing import *
 
 warnings.filterwarnings("ignore")
 
-
 def main(config_path):
-    print("Start: Parameters Loading")
+    """Start: Parameters Loading"""
     with open(config_path) as f:
         config = yaml.load_all(f, Loader=yaml.FullLoader)
         for p in config:
@@ -43,14 +37,9 @@ def main(config_path):
     except KeyError:
         SEED = 2
 
-    # Fix numpy seed for reproducibility
     np.random.seed(SEED)
     random.seed(SEED)
-    # Fix Torch graph-level seed for reproducibility
     torch.manual_seed(SEED)
-
-    if params["runits"][0] == "None":
-        params["runits"] = None
 
     try:
         print(params["rep_ci"])
@@ -59,59 +48,40 @@ def main(config_path):
 
     if params["rep_ci"] > 1:
         ci_test = []
-    print("End: Parameters Loading")
+    """End: Parameters Loading"""
 
-    print("Start: Tensorboard creation")
+    """Start: Tensorboard creation"""
     if params["save_tensor"]:
         path_logger = "tensorboard/"
     else:
         path_logger = "notsave/"
-    config_name = (
-        "model_"
-        + params["model"]
-        + "_Ntasks_"
-        + str(len(params["tasks"]))
-        + "_batch_"
-        + str(params["batch_size"])
-        + "_N_experts_"
-        + str(params["num_experts"])
-    )
+    config_name = ("model_" + params["model"] + "_Ntasks_" + str(len(params["tasks"])) + "_batch_" + str(params["batch_size"]) + "_N_experts_" + str(params["num_experts"]))
     if params["save_tensor"]:
         writer_tensorboard = TensorboardWriter(path_logger, config_name)
 
     # Starting date to folder creation
     date_start = datetime.today().strftime("%Y-%m-%d-%H:%M:%S")
-    print("End: Tensorboard Creation")
+    """End: Tensorboard Creation"""
 
     for rep in range(params["rep_ci"]):
         rep_start = time.time()
+
         print("Start: Data Loading")
-        print("L5PC Voltage Traces and Spike Timings")
-            (
-                train_loader,
-                validation_loader,
-                test_loader,
-                num_features,
-                num_tasks,
-                params["tasks"],
-                # Buckets
-            ) = data_preparation_newdataset(params)
-            X, y = next(iter(train_loader))
-        print("Batch shapes: ", X.shape, y.shape)
+        (train_loader, validation_loader, test_loader, num_features, num_tasks, output_info,) = data_preparation_neuron(params)
+        X, y = next(iter(train_loader))
+        print("...batch shapes: ", X.shape, y.shape)
         print("End: Data Loading")
 
         print("Start: Model Initialization and Losses")
-        # Your new dataset
-        params["expert_blocks"] = try_keyerror("expert_blocks", params)
         if params["model"] == "Standard":
-            # Shared Bottom
-            print("add your model here: model = standarOptimization()")
+            # Shared bottom
+            model = standarOptimization(data=params["data"], num_units=params["num_units"], num_experts=params["num_experts"], num_tasks=len(params["tasks"]), num_features=num_features, hidden_size=params["hidden_size"], tasks_name=params["tasks"])
         else:
             # MMoEEx or MMoE
-            print("add your model here: model = MMoETowers()")
-        wd = 0.0001  # Adam weight_decay
-        lr = 1e-3  # Learning Rate
-        # Change to your criterion
+            model = MMoETowers(data=params["data"], tasks_name=params["tasks"], num_tasks=num_tasks, num_experts=params["num_experts"], num_units=params["num_units"], num_features=num_features, modelname=params["model"], prob_exclusivity=params["prob_exclusivity"], type=params["type_exc"])
+
+        lr = 1e-4  # Learning Rate
+        wd = 0.01  # Adam weight_decay
         criterion = [nn.BCEWithLogitsLoss().to(device) for i in range(num_tasks)]
 
         if torch.cuda.is_available():
@@ -119,23 +89,10 @@ def main(config_path):
         print("End: Model Initialization")
 
         print("Start: Variables Initialization")
+        alpha = 0.5
         optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
-        if params["data"] != "pcba":
-            opt_scheduler = torch.optim.lr_scheduler.ExponentialLR(
-                optimizer=optimizer, gamma=params["gamma"]
-            )
-
-        # OPTIONAL: DWA and LBTW task balancing parameters and initialization
-        if params["data"] == "pcba":
-            try:
-                alpha = params["dwa_alpha"]
-            except KeyError:
-                alpha = 0.5
-        else:
-            alpha = 0.5
-        balance_tasks = TaskBalanceMTL(
-            model.num_tasks, params["task_balance_method"], alpha_balance=alpha
-        )
+        opt_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=params["gamma"])
+        balance_tasks = TaskBalanceMTL(model.num_tasks, params["task_balance_method"], alpha_balance=alpha)
 
         # Loss variables initialization
         loss_ = []
@@ -144,83 +101,43 @@ def main(config_path):
         best_epoch = 0
         print("End: Variables Initialization")
 
-        print("Start: Training")
+        print("Start: Training Loop")
         for e in range(params["max_epochs"]):
             torch.cuda.empty_cache()
-            for i, batch in enumerate(train_loader):
+            for i, batch in enumerate(tqdm(train_loader)):
                 optimizer.zero_grad()
                 loss = 0
 
                 if params["model"] == "Standard":
                     train_y_pred = model(batch[0].to(device))
                     for task in range(model.num_tasks):
-                        if params["data"] == "census":
                         label = batch[1][:, task].long().to(device).reshape(-1, 1)
-                        # Calculate loss using the criterion function
-                        loss_temp = (
-                            criterion[task](
-                                train_y_pred[task][batch[2][:, task] > 0],
-                                label.float()[batch[2][:, task] > 0],
-                            )
-                            * params["lambda"][task]
-                        )
+                        loss_temp = (criterion[task](train_y_pred[task][batch[2][:, task] > 0], label.float()[batch[2][:, task] > 0],) * params["lambda"][task])
                         loss += loss_temp
                     loss.backward()
                     optimizer.step()
                 else:
-                    """
-                    MMoE or MMoEEx-diversity
-                    - MMoE: Multi-gate Mixture-of-Experts
-                    - Md: Multi-gate Mixture-of-Experts with Exclusivity (only diversity component, without MAML-MTl)
-                    """
-                    """
-                    MMoEEx: Diversity + MAML-MTL (Full model)
-                    """
                     if params["model"] == "MMoE" or params["model"] == "Md":
                         train_y_pred = model(batch[0].to(device))
                         for task in range(model.num_tasks):
-                                # Your new model/dataset
-                                label = (
-                                    batch[1][:, task].long().to(device).reshape(-1, 1)
-                                )
-                                loss += criterion[task](
-                                    train_y_pred[task], label.float()
-                                )
-                                # Saving loss per task for task-balancing
-                                task_losses[task] = (
-                                    criterion[task](train_y_pred[task], label.float())
-                                    * params["lambda"][task]
-                                )
+                                label = (batch[1][:, task].long().to(device).reshape(-1, 1))
+                                loss += criterion[task](train_y_pred[task], label.float())
+                                task_losses[task] = (criterion[task](train_y_pred[task], label.float()) * params["lambda"][task])
                         loss.backward()
                         if params["model"] == "Md":
-                            # Keeping gates 'closed'
                             if params["type_exc"] == "exclusivity":
-                                (
-                                    model.MMoEEx.gate_kernels.grad.data,
-                                    model.MMoEEx.gate_bias.grad.data,
-                                ) = keep_exclusivity(model)
+                                (model.MMoEEx.gate_kernels.grad.data, model.MMoEEx.gate_bias.grad.data) = keep_exclusivity(model)
                             else:
-                                # Exclusion
-                                (
-                                    model.MMoEEx.gate_kernels.grad.data,
-                                    model.MMoEEx.gate_bias.grad.data,
-                                ) = keep_exclusion(model)
+                                (model.MMoEEx.gate_kernels.grad.data, model.MMoEEx.gate_bias.grad.data) = keep_exclusion(model)
                         optimizer.step()
                     else:
                         """
                         1) For MAML-MTL, we split the training set in inner and outer loss calculation
                         """
-                        # Your new model/dataset
-                        (
-                            train_y_pred,
-                            label_inner,
-                            train_outer,
-                            label_outer,
-                        ) = maml_split(
-                            batch, model, device, params["maml_split_prop"]
-                        )
 
+                        (train_y_pred, label_inner, train_outer, label_outer,) = maml_split(batch, model, device, params["maml_split_prop"])
                         loss_task_train = []
+
                         """
                         2) Deepcopy to save the model before temporary updates
                         """
@@ -229,66 +146,40 @@ def main(config_path):
                             """
                             3) Inner loss / loss in the current model
                             """
-                            pred, obs = organizing_predictions(
-                                model, params, train_y_pred[task], label_inner, task
-                            )
+                            pred, obs = organizing_predictions(model, params, train_y_pred[task], label_inner, task)
                             inner_loss = criterion[task](pred, obs).float()
                             """
                             4) Temporary update per task
                             """
-                            params_ = gradient_update_parameters(
-                                model,
-                                inner_loss,
-                                step_size=optimizer.param_groups[0]["lr"],
-                            )
+                            params_ = gradient_update_parameters(model, inner_loss, step_size=optimizer.param_groups[0]["lr"],)
                             """
                             5) Calculate outer loss / loss in the temporary model
                             """
                             current_y_pred = model(train_outer, params=params_)
-                            pred, obs = organizing_predictions(
-                                model,
-                                params,
-                                current_y_pred[task],
-                                label_outer,
-                                task,
-                            )
-                            loss_out = (
-                                criterion[task](pred, obs).float()
-                                * params["lambda"][task]
-                            )
+                            pred, obs = organizing_predictions(model, params, current_y_pred[task], label_outer, task,)
+                            loss_out = (criterion[task](pred, obs).float() * params["lambda"][task])
                             task_losses[task] = loss_out
                             loss += loss_out
                             loss_task_train.append(loss_out.cpu().detach().numpy())
                             """
                             6) Reset temporary model
                             """
-                            for (_0, p_), (_1, p_b) in zip(
-                                model.named_parameters(), model_copy.named_parameters()
-                            ):
+                            for (_0, p_), (_1, p_b) in zip(model.named_parameters(), model_copy.named_parameters()):
                                 p_.data = p_b.data
 
                         loss.backward()
                         # Keeping gates 'closed'
                         if params["type_exc"] == "exclusivity":
-                            (
-                                model.MMoEEx.gate_kernels.grad.data,
-                                model.MMoEEx.gate_bias.grad.data,
-                            ) = keep_exclusivity(model)
-                        else:
-                            (
-                                model.MMoEEx.gate_kernels.grad.data,
-                                model.MMoEEx.gate_bias.grad.data,
-                            ) = keep_exclusion(model)
+                            (model.MMoEEx.gate_kernels.grad.data, model.MMoEEx.gate_bias.grad.data,) = keep_exclusivity(model)
+                        else: 
+                            (model.MMoEEx.gate_kernels.grad.data, model.MMoEEx.gate_bias.grad.data,) = keep_exclusion(model)
                         optimizer.step()
 
                 """ Optional task balancing step"""
                 if params["task_balance_method"] == "LBTW":
                     for task in range(model.num_tasks):
                         if i == 0:  # First batch
-                            balance_tasks.get_initial_loss(
-                                task_losses[task],
-                                task,
-                            )
+                            balance_tasks.get_initial_loss(task_losses[task], task,)
                         balance_tasks.LBTW(task_losses[task], task)
                         weights = balance_tasks.get_weights()
                         params["lambda"] = weights
@@ -299,50 +190,24 @@ def main(config_path):
             """ Saving losses per epoch"""
             loss_.append(loss.cpu().detach().numpy())
 
-            print("Calculating metrics")
+            print("... calculating metrics")
             print("Validation")
-            auc_val, _, loss_val = metrics_newdata(
-                e, validation_loader, model, device, criterion
-            )
+            auc_val, _, loss_val = metrics_census(e, validation_loader, model, device, criterion)
             print("Train")
-            auc_train, _ = metrics_newdata(
-                e, train_loader, model, device, train=True
-            )
+            auc_train, _ = metrics_census(e, train_loader, model, device, train=True)
 
             """Updating tensorboard"""
             if params["save_tensor"]:
-                writer_tensorboard.add_scalar(
-                    "Loss/train_Total", loss.cpu().detach().numpy(), e
-                )
+                writer_tensorboard.add_scalar("Loss/train_Total", loss.cpu().detach().numpy(), e)
                 for task in range(model.num_tasks):
-                    writer_tensorboard.add_scalar(
-                        "Auc/train_T" + str(task + 1), auc_train[task], e
-                    )
-                    writer_tensorboard.add_scalar(
-                        "Auc/Val_T" + str(task + 1), auc_val[task], e
-                    )
+                    writer_tensorboard.add_scalar("Auc/train_T" + str(task + 1), auc_train[task], e)
+                    writer_tensorboard.add_scalar("Auc/Val_T" + str(task + 1), auc_val[task], e)
                 writer_tensorboard.end_writer()
 
             """Printing Outputs """
             if e % 1 == 0:
                 if params["gamma"] < 1 and e % 10 == 0 and e > 1:
                     opt_scheduler.step()
-                if params["rep_ci"] <= 1 and params["data"] != "pcba":
-                    print(
-                        "\n{}-Loss: {} \nAUC-Train: {}  \nAUC-Val: {} \nL-val: {}".format(
-                            e, loss.cpu().detach().numpy(), auc_train, auc_val, loss_val
-                        )
-                    )
-                elif params["rep_ci"] <= 1 and params["data"] == "pcba":
-                    print(
-                        "\n{}-Loss: {} \nAUC-Train-pcba: {}  \nAUC-Val: {} \nL-val: {}".format(
-                            e,
-                            loss.cpu().detach().numpy(),
-                            np.nanmean(auc_train),
-                            np.nanmean(auc_val),
-                            np.mean(loss_val),
-                        )
-                    )
 
             """Saving the model with best validation AUC"""
             if params["best_validation_test"]:
@@ -352,20 +217,7 @@ def main(config_path):
                     best_val_AUC = current_val_AUC
                     print("better AUC ... saving model")
                     # Path to save model
-                    path = (
-                        ".//output//"
-                        + date_start
-                        + "/"
-                        + params["model"]
-                        + "-"
-                        + params["data"]
-                        + "-"
-                        + str(params["num_experts"])
-                        + "-"
-                        + params["output"]
-                        + "/"
-                    )
-
+                    path = (".//output//" + date_start + "/" + params["model"] + "-" + params["data"] + "-" + str(params["num_experts"]) + "-" + params["output"] + "/")
                     Path(path).mkdir(parents=True, exist_ok=True)
                     path = path + "net_best.pth"
                     torch.save(model.state_dict(), path)
@@ -389,106 +241,33 @@ def main(config_path):
 
         if params["best_validation_test"]:
             print("...Loading best validation epoch")
-            path = (
-                ".//output//"
-                + date_start
-                + "/"
-                + params["model"]
-                + "-"
-                + params["data"]
-                + "-"
-                + str(params["num_experts"])
-                + "-"
-                + params["output"]
-                + "/"
-            )
+            path = (".//output//" + date_start + "/" + params["model"] + "-" + params["data"] + "-" + str(params["num_experts"]) + "-" + params["output"] + "/")
             path = path + "net_best.pth"
             model.load_state_dict(torch.load(path))
 
-        print("Calculating metrics on testing set")
-        auc_test, _, conf_interval = metrics_newdata(
-            epoch=e,
-            data_loader=test_loader,
-            model=model,
-            device=device,
-            confidence_interval=True,
-        )
+        print("... calculating metrics on testing set")
+        auc_test, _, conf_interval = metrics_newdata(epoch=e, data_loader=test_loader, model=model, device=device, confidence_interval=True,)
 
-        print("Calculating diversity on testing set experts")
+        print("... calculating diversity on testing set experts")
         if params["model"] != "Standard":
-            measuring_diversity(
-                test_loader, model, device, params["output"], params["data"]
-            )
+            measuring_diversity(test_loader, model, device, params["output"], params["data"])
 
         """Creating and saving output files"""
         if params["rep_ci"] <= 1:
-            if params["data"] == "pcba":
-                print("\nFinal AUC-Test: {}".format(np.nanmean(auc_test)))
-            else:
-                print("\nFinal AUC-Test: {}".format(auc_test))
-
+            print("\nFinal AUC-Test: {}".format(auc_test))
             print("...Creating the output file")
             if params["create_outputfile"]:
-                if params["data"] != "pcba":
-                    precision_auc_test = ""
-
-                data_output = output_file_creation(
-                    rep,
-                    model.num_tasks,
-                    auc_test,
-                    auc_val,
-                    auc_train,
-                    conf_interval,
-                    rep_start,
-                    params,
-                    precision_auc_test,
-                )
-                path = (
-                    ".//output//"
-                    + date_start
-                    + "/"
-                    + params["model"]
-                    + "-"
-                    + params["data"]
-                    + "-"
-                    + str(params["num_experts"])
-                    + "-"
-                )
-                data_output.to_csv(
-                    path + params["output"] + ".csv", header=True, index=False
-                )
+                data_output = output_file_creation(rep, model.num_tasks, auc_test, auc_val, auc_train, conf_interval, rep_start, params, precision_auc_test,)
+                path = (".//output//" + date_start + "/"+ params["model"] + "-" + params["data"] + "-" + str(params["num_experts"]) + "-")
+                data_output.to_csv(path + params["output"] + ".csv", header=True, index=False)
 
         else:
             ci_test.append(auc_test)
             if params["create_outputfile"]:
                 if rep == 0:
-                    data_output = output_file_creation(
-                        rep,
-                        model.num_tasks,
-                        auc_test,
-                        auc_val,
-                        auc_train,
-                        conf_interval,
-                        rep_start,
-                        params,
-                    )
-                    path = (
-                        ".//output//"
-                        + date_start
-                        + "/"
-                        + params["model"]
-                        + "-"
-                        + params["data"]
-                        + "-"
-                        + str(params["num_experts"])
-                        + "-"
-                        + params["task_balance_method"]
-                        + "/"
-                    )
-
-                    data_output.to_csv(
-                        path + params["output"] + ".csv", header=True, index=False
-                    )
+                    data_output = output_file_creation(rep, model.num_tasks, auc_test, auc_val, auc_train, conf_interval, rep_start, params,)
+                    path = (".//output//" + date_start + "/"  + params["model"] + "-" + params["data"] + "-" + str(params["num_experts"]) + "-" + params["task_balance_method"] + "/")
+                    data_output.to_csv(path + params["output"] + ".csv", header=True, index=False)
                 else:
                     _output = {"repetition": rep}
                     for i in range(model.num_tasks):
@@ -523,9 +302,7 @@ def main(config_path):
                     _output["type_exc"] = params["type_exc"]
                     _output["prob_exclusivity"] = params["prob_exclusivity"]
                     data_output = data_output.append(_output, ignore_index=True)
-                    data_output.to_csv(
-                        "output//" + params["output"] + ".csv", header=True, index=False
-                    )
+                    data_output.to_csv("output//" + params["output"] + ".csv", header=True, index=False)
 
     """Calculating the Confidence Interval using Bootstrap"""
     if params["rep_ci"] > 1:

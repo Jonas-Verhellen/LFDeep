@@ -13,8 +13,8 @@ class SpikeDataset(Dataset):
         return len(self.spike_data)
     
     def __getitem__(self, idx):
-        data_sample = torch.from_numpy(self.spike_data[:,:,idx])
-        target_sample = torch.from_numpy(self.target_data[:,:,idx])
+        data_sample = torch.from_numpy(self.spike_data[:,:,idx]).float()
+        target_sample = torch.from_numpy(self.target_data[:,:,idx]).float()
         sample = {'data': data_sample, 'target': target_sample}
         
         return sample
