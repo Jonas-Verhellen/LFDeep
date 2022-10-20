@@ -1,0 +1,19 @@
+name: project
+channels:
+  - pytorch
+  - defaults
+dependencies:
+  - python=3.8
+  - ipython
+  - numpy
+  - cudatoolkit=11.0
+  - pytorch>=1.8
+  - torchvision>=0.8
+  - pip
+  - pip:
+    - -e .  # Install project package in edit mode, so you don't have to run this everytime you edit your python files
+    - -r tests/requirements.txt
+    - pytorch-lightning>=1.2.0
+    - hydra-core --pre  # Using 1.1 pre-release for the moment
+    - hydra-colorlog --pre
+    - pudb

@@ -1,0 +1,8 @@
+name: LitAutoEncoder
+
+_target_: project.model.autoencoder.LitAutoEncoder
+hidden_dim: 128
+
+defaults:
+  - /optim/sgd.yaml@optim_encoder
+  - /optim/adam.yaml@optim_decoder

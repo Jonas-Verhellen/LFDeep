@@ -1,0 +1,10 @@
+name: cifar10
+
+_target_: project.data.CIFARDataModule
+# Use absolute path for input to avoid messing with hydra output paths
+data_dir: ~/datasets/CIFAR/
+batch_size: 4
+num_workers: 2
+
+input_dim: 3072  # 3*32*32
+output_dim: 10

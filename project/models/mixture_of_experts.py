@@ -163,27 +163,3 @@ class MMoE(pl.LightningModule):
     def on_train_start(self):
         self.logger.log_hyperparams(self.hparams, {"loss/val": 0, "loss/val": 0, "loss/test": 0})
 
-class MMoEEx(MMoE):
-    def __init__(self, config):
-        super(MMoEEx, self).__init__()
-        self.prob_exclusivity = config.prob_exclusivity
-        self.type = config.type 
-
-        exclusivity = np.repeat(self.num_tasks + 1, self.num_experts)
-        to_add = int(self.num_experts * self.prob_exclusivity)
-        for e in range(to_add):
-            exclusivity[e] = randint(0, self.num_tasks)
-
-        self.exclusivity = exclusivity
-        gate_kernels = torch.rand((self.num_tasks, self.seqlen * self.num_features, self.num_experts)).float()
-
-        for expert_number, task_number in enumerate(self.exclusivity):
-            if task_number < self.num_tasks + 1:
-                if self.type == "exclusivity":
-                    for task in range(self.num_tasks):
-                        if task != task_number:
-                            gate_kernels[task][:, expert_number] = 0.0
-                else:
-                    gate_kernels[task_number][:, expert_number] = 0.0
-
-        self.gate_kernels = nn.Parameter(gate_kernels, requires_grad=True)
