@@ -1,0 +1,14 @@
+name: MMoE
+
+num_tasks: 57
+num_experts: 10
+num_layers: 2
+num_units: 50
+
+sequence_len: 400
+num_features: 1278
+
+use_expert_bias: yes
+use_gate_bias: yes 
+
+expert: tcn.yaml

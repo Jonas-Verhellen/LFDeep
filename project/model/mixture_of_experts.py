@@ -1,18 +1,11 @@
-import sys
 import hydra
-import numpy as np
-from numpy.random import randint
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from temporal_convolution import TemporalConvNet
-
-sys.path.append("/src")
-
 import pytorch_lightning as pl
-
 
 class MMoE(pl.LightningModule):
     def __init__(self, config):
@@ -24,19 +17,20 @@ class MMoE(pl.LightningModule):
 
         self.sequence_len = config.sequence_len
         self.num_features =  config.num_features
+        self.output_features = config.expert.num_channels[-1]
 
         self.use_expert_bias = config.use_expert_bias
         self.use_gate_bias = config.use_gate_bias
 
-        self.towers_list = nn.ModuleList([nn.Linear(self.sequence_len*self.num_features, self.num_units) for i in range(self.num_tasks)])
-        self.output_list = nn.ModuleList([nn.Linear(self.num_units, 1) for i in range(self.num_tasks)])
+        self.towers_list = nn.ModuleList([nn.Linear(self.sequence_len*self.num_features, self.num_units) for _ in range(self.num_tasks)])
+        self.output_list = nn.ModuleList([nn.Linear(self.num_units, 1) for _ in range(self.num_tasks)])
 
-        self.expert_kernels = nn.ModuleList([TemporalConvNet() for i in range(self.num_experts)])
+        self.expert_kernels = nn.ModuleList([hydra.utils.instantiate(config.expert) for _ in range(self.num_experts)])
         gate_kernels = torch.rand((self.num_tasks, self.sequence_len * self.num_features, self.num_experts)).float()
         self.expert_bias = nn.Parameter(torch.zeros(self.num_experts, self.sequence_len), requires_grad=True)
 
         if self.use_expert_bias:
-            self.expert_bias = nn.Parameter(torch.zeros(self.num_experts, 6400), requires_grad=True)
+            self.expert_bias = nn.Parameter(torch.zeros(self.num_experts, self.output_features*self.sequence_len), requires_grad=True)
 
         if self.use_gate_bias:
             self.gate_bias = nn.Parameter(torch.zeros(self.num_tasks, 1, self.num_experts), requires_grad=True)
@@ -50,7 +44,7 @@ class MMoE(pl.LightningModule):
 
     def forward(self, inputs, diversity=False):
         batch_size = inputs.shape[0]
-        inputs = inputs[:, :, :self.sequence_len]
+        inputs = inputs[:, :, :self.sequence_len] #TODO: to be removed!!
         expert_outputs = self.calculating_experts(inputs)
         gate_outputs = self.calculating_gates(inputs, batch_size)
         product_outputs = self.multiplying_gates_and_experts(expert_outputs, gate_outputs)
@@ -171,6 +165,7 @@ class MMoE(pl.LightningModule):
         self.logger.log_hyperparams(self.hparams, {"metric/training": [0], "metric/test": [0], "metric/val": [0]})
 
 
+""" 
 class MMoEEx(MMoE):
     def __init__(self, config):
         super(MMoEEx, self).__init__()
@@ -194,4 +189,5 @@ class MMoEEx(MMoE):
                 else:
                     gate_kernels[task_number][:, expert_number] = 0.0
 
-        self.gate_kernels = nn.Parameter(gate_kernels, requires_grad=True)
+        self.gate_kernels = nn.Parameter(gate_kernels, requires_grad=True) 
+"""

@@ -12,7 +12,7 @@ class Chomp1d(nn.Module):
         return x[:, :, :-self.chomp_size].contiguous()
 
 class TemporalBlock(nn.Module):
-    def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout=0.2):
+    def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout):
         super(TemporalBlock, self).__init__()
         self.conv1 = weight_norm(nn.Conv1d(n_inputs, n_outputs, kernel_size, stride=stride, padding=padding, dilation=dilation))
         self.chomp1 = Chomp1d(padding)
@@ -41,15 +41,19 @@ class TemporalBlock(nn.Module):
         return self.relu(out + res)
 
 class TemporalConvNet(nn.Module):
-    def __init__(self, num_inputs = 1278, num_channels = [64,32,16], kernel_size=54, dropout=0.2):
+    def __init__(self, config):
         super(TemporalConvNet, self).__init__()
+        self.num_inputs = config.num_inputs
+        self.num_channels = config.num_channels
+        self.kernel_size=config.kernel_size
+        self.dropout=config.dropout
         layers = []
-        num_levels = len(num_channels)
+        num_levels = len(self.num_channels)
         for i in range(num_levels):
             dilation_size = 2 ** i
-            in_channels = num_inputs if i == 0 else num_channels[i-1]
-            out_channels = num_channels[i]
-            layers += [TemporalBlock(in_channels, out_channels, kernel_size, stride=1, dilation=dilation_size, padding=(kernel_size-1) * dilation_size, dropout=dropout)]
+            in_channels = self.num_inputs if i == 0 else self.num_channels[i-1]
+            out_channels = self.num_channels[i]
+            layers += [TemporalBlock(in_channels, out_channels, self.kernel_size, stride=1, dilation=dilation_size, padding=(self.kernel_size-1) * dilation_size, dropout=self.dropout)]
         self.network = nn.Sequential(*layers)
 
     def forward(self, x):

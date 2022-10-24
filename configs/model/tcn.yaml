@@ -1,0 +1,7 @@
+name: TemporalConvNet
+
+num_inputs: 1278
+num_channels: [64,32,16]
+kernel_size: 54
+dropout: 0.2
+

@@ -10,7 +10,6 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-
 class SpikeDataset(Dataset):
     def __init__(self,in_path,target_path):
         self.spike_data = np.load(in_path,mmap_mode='r+')
@@ -23,24 +22,14 @@ class SpikeDataset(Dataset):
         data_sample = torch.from_numpy(self.spike_data[:,:,idx]).float()
         target_sample = torch.from_numpy(self.target_data[:,:,idx]).float()
         sample = {'data': data_sample, 'target': target_sample}
-        
         return sample
 
 class SpikeDataModule(pl.LightningDataModule):
-    def __init__(self, in_path, target_path , batch_size: int = 32, num_workers: int = 1, **kwargs):
-        self.in_path = in_path
-        self.target_path = target_path
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-            
-    def train_dataloader(self):
-        return DataLoader(self.mnist_train, batch_size=self.batch_size, num_workers=self.num_workers)
-
-    def val_dataloader(self):
-        return DataLoader(self.mnist_val, batch_size=self.batch_size, num_workers=self.num_workers)
-
-    def test_dataloader(self):
-        return DataLoader(self.mnist_test, batch_size=self.batch_size, num_workers=self.num_workers)    
+    def __init__(self, config):
+        self.in_path = config.in_path
+        self.target_path = config.target_path
+        self.batch_size = config.batch_size
+        self.num_workers = config.num_workers
 
     def setup(self, stage: Optional[str] = None):
         if stage == "fit" or stage is None:

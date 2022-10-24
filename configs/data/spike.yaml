@@ -1,0 +1,8 @@
+name: spike
+
+in_path: 
+target_path: 
+batch_size: 32
+num_workers: 2
+
+

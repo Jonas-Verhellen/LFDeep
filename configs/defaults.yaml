@@ -1,16 +1,7 @@
 hydra: 
-  run:
-    # Configure output dir of each experiment programmatically from the arguments
-    # Example "outputs/mnist/classifier/baseline/2021-03-10-141516"
-    dir: outputs/${data.name}/${model.name}/${experiment}/${now:%Y-%m-%d_%H%M%S}
-
-# Global configurations shared between different modules
-experiment: baseline
-
-# Composing nested config with default
 defaults:
-  - data: mnist  # Path to sub-config, can also omit the .yaml extension
-  - model: classifier.yaml  # I add full path for easy navigation in vim (cursor in path, press gf)
+  - data: spike.yaml  
+  - model: moee.yaml  
 
   - override hydra/job_logging: colorlog
   - override hydra/hydra_logging: colorlog
@@ -41,7 +32,7 @@ trainer:
   # log_every_n_steps: 50
   # log_gpu_memory: False
   # logger: True
-  # max_epochs: None
+  max_epochs: 1
   # max_steps: None
   # min_epochs: None
   # min_steps: None
