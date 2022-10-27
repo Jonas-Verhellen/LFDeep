@@ -2,7 +2,7 @@ import hydra
 import logging
 import pytorch_lightning as pl
 from omegaconf import DictConfig, OmegaConf
-
+# from project.model.mixture_of_experts import MMoE
 logger = logging.getLogger(__name__)
 
 @hydra.main(config_path="configs", config_name="defaults")
@@ -20,8 +20,9 @@ def main(config: DictConfig) -> None:
 
     trainer = pl.Trainer(**OmegaConf.to_container(config.trainer), logger=tensorboard, callbacks=callbacks)
 
-    trainer.fit(model, datamodule=data_module)
+    trainer.fit(model, datamodule=data_module) # try this on think 
     # trainer.test(model, datamodule=data_module)  # Optional
+
 
 if __name__ == '__main__':
     main()

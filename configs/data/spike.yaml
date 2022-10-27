@@ -1,7 +1,7 @@
 name: spike
 
-in_path: 
-target_path: 
+in_path: /dcip/LFDeepData/input_spikes.npy
+target_path: /dcip/LFDeepData/output.npy
 batch_size: 32
 num_workers: 2
 

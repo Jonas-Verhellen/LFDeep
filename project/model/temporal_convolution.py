@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn
 from torch.nn.utils import weight_norm
 import torch.nn.functional as F
+import pytorch_lightning as pl
 
-class Chomp1d(nn.Module):
+class Chomp1d(pl.LightningModule):
     def __init__(self, chomp_size):
         super(Chomp1d, self).__init__()
         self.chomp_size = chomp_size
@@ -11,7 +12,7 @@ class Chomp1d(nn.Module):
     def forward(self, x):
         return x[:, :, :-self.chomp_size].contiguous()
 
-class TemporalBlock(nn.Module):
+class TemporalBlock(pl.LightningModule):
     def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout):
         super(TemporalBlock, self).__init__()
         self.conv1 = weight_norm(nn.Conv1d(n_inputs, n_outputs, kernel_size, stride=stride, padding=padding, dilation=dilation))
@@ -40,7 +41,7 @@ class TemporalBlock(nn.Module):
         res = x if self.downsample is None else self.downsample(x)
         return self.relu(out + res)
 
-class TemporalConvNet(nn.Module):
+class TemporalConvNet(pl.LightningModule):
     def __init__(self, config):
         super(TemporalConvNet, self).__init__()
         self.num_inputs = config.num_inputs

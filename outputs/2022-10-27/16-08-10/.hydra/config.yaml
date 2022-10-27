@@ -1,0 +1,23 @@
+data:
+  name: spike
+  in_path: /dcip/LFDeepData/input_spikes.npy
+  target_path: /dcip/LFDeepData/output.npy
+  batch_size: 32
+  num_workers: 2
+model:
+  _target_: project.model.mixture_of_experts.MMoE
+  config:
+    hidden_dim: 128
+    num_tasks: 57
+    num_experts: 10
+    num_layers: 2
+    num_units: 50
+    sequence_len: 400
+    num_features: 1278
+    use_expert_bias: true
+    use_gate_bias: true
+    expert: configs/model/tcn.yaml
+    optimizer: configs/optim/adam.yaml
+trainer:
+  benchmark: true
+  max_epochs: 1

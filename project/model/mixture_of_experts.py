@@ -4,12 +4,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from temporal_convolution import TemporalConvNet
+from project.model.temporal_convolution import TemporalConvNet
 import pytorch_lightning as pl
+import torchmetrics
+from omegaconf import OmegaConf
 
 class MMoE(pl.LightningModule):
     def __init__(self, config):
         super(MMoE, self).__init__()
+        self.save_hyperparameters()
         self.num_tasks = config.num_tasks
         self.num_experts = config.num_experts
         self.num_layers = config.num_layers
@@ -17,7 +20,6 @@ class MMoE(pl.LightningModule):
 
         self.sequence_len = config.sequence_len
         self.num_features =  config.num_features
-        self.output_features = config.expert.num_channels[-1]
 
         self.use_expert_bias = config.use_expert_bias
         self.use_gate_bias = config.use_gate_bias
@@ -25,12 +27,13 @@ class MMoE(pl.LightningModule):
         self.towers_list = nn.ModuleList([nn.Linear(self.sequence_len*self.num_features, self.num_units) for _ in range(self.num_tasks)])
         self.output_list = nn.ModuleList([nn.Linear(self.num_units, 1) for _ in range(self.num_tasks)])
 
-        self.expert_kernels = nn.ModuleList([hydra.utils.instantiate(config.expert) for _ in range(self.num_experts)])
+        self.expert_kernels = nn.ModuleList([hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert))) for _ in range(self.num_experts)])
         gate_kernels = torch.rand((self.num_tasks, self.sequence_len * self.num_features, self.num_experts)).float()
         self.expert_bias = nn.Parameter(torch.zeros(self.num_experts, self.sequence_len), requires_grad=True)
 
         if self.use_expert_bias:
-            self.expert_bias = nn.Parameter(torch.zeros(self.num_experts, self.output_features*self.sequence_len), requires_grad=True)
+            output_features = self.expert_kernels[0].num_channels[-1]
+            self.expert_bias = nn.Parameter(torch.zeros(self.num_experts, output_features*self.sequence_len), requires_grad=True)
 
         if self.use_gate_bias:
             self.gate_bias = nn.Parameter(torch.zeros(self.num_tasks, 1, self.num_experts), requires_grad=True)
@@ -38,9 +41,9 @@ class MMoE(pl.LightningModule):
         self.gate_kernels = nn.Parameter(gate_kernels, requires_grad=True)
         self.task_bias = nn.Parameter(torch.zeros(self.num_tasks), requires_grad=True)
 
-        self.train_metric = [pl.metrics.Accuracy(), pl.metrics.MeanSquaredError()]
-        self.val_metric = [pl.metrics.Accuracy(), pl.metrics.MeanSquaredError()]
-        self.test_metric = [pl.metrics.Accuracy(), pl.metrics.MeanSquaredError()]
+        self.train_metric = [torchmetrics.Accuracy(), torchmetrics.MeanSquaredError()] #MSE should work for multi_ouput
+        self.val_metric = [torchmetrics.Accuracy(), torchmetrics.MeanSquaredError()]
+        self.test_metric = [torchmetrics.Accuracy(), torchmetrics.MeanSquaredError()]
 
     def forward(self, inputs, diversity=False):
         batch_size = inputs.shape[0]
@@ -159,10 +162,12 @@ class MMoE(pl.LightningModule):
         self.log('metric/test', self.test_metric)
 
     def configure_optimizers(self):
-        return hydra.utils.instantiate(self.hparams.optim, params=self.parameters())
+        print(self.hparams.optim)
+        print(self.parameters())
+        return hydra.utils.instantiate(self.parameters(), self.hparams.optim)
 
     def on_train_start(self):
-        self.logger.log_hyperparams(self.hparams, {"metric/training": [0], "metric/test": [0], "metric/val": [0]})
+        self.logger.log_hyperparams(self.hparams, {"metric/training": [0, 0], "metric/test": [0, 0], "metric/val": [0, 0]})
 
 
 """ 
