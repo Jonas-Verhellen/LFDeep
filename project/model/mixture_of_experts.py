@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from project.model.temporal_convolution import TemporalConvNet
 import pytorch_lightning as pl
 import torchmetrics
 from omegaconf import OmegaConf
@@ -24,39 +23,42 @@ class MMoE(pl.LightningModule):
         self.use_expert_bias = config.use_expert_bias
         self.use_gate_bias = config.use_gate_bias
 
-        self.towers_list = nn.ModuleList([nn.Linear(self.sequence_len*self.num_features, self.num_units) for _ in range(self.num_tasks)])
-        self.output_list = nn.ModuleList([nn.Linear(self.num_units, 1) for _ in range(self.num_tasks)])
+        self.optimizer = OmegaConf.load(hydra.utils.to_absolute_path(config.optimizer))
 
         self.expert_kernels = nn.ModuleList([hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert))) for _ in range(self.num_experts)])
-        gate_kernels = torch.rand((self.num_tasks, self.sequence_len * self.num_features, self.num_experts)).float()
-        self.expert_bias = nn.Parameter(torch.zeros(self.num_experts, self.sequence_len), requires_grad=True)
+        output_features = self.expert_kernels[0].num_channels[-1]
+
+        self.towers_list = nn.ModuleList([nn.Linear(self.sequence_len*output_features, self.num_units) for _ in range(self.num_tasks)])
+        self.output_list = nn.ModuleList([nn.Linear(self.num_units, 1) for _ in range(self.num_tasks)])
 
         if self.use_expert_bias:
-            output_features = self.expert_kernels[0].num_channels[-1]
             self.expert_bias = nn.Parameter(torch.zeros(self.num_experts, output_features*self.sequence_len), requires_grad=True)
+
+        gate_kernels = torch.rand((self.num_tasks, self.sequence_len * self.num_features, self.num_experts)).float()
+        self.gate_kernels = nn.Parameter(gate_kernels, requires_grad=True)
 
         if self.use_gate_bias:
             self.gate_bias = nn.Parameter(torch.zeros(self.num_tasks, 1, self.num_experts), requires_grad=True)
 
-        self.gate_kernels = nn.Parameter(gate_kernels, requires_grad=True)
         self.task_bias = nn.Parameter(torch.zeros(self.num_tasks), requires_grad=True)
 
-        self.train_metric = [torchmetrics.Accuracy(), torchmetrics.MeanSquaredError()] #MSE should work for multi_ouput
-        self.val_metric = [torchmetrics.Accuracy(), torchmetrics.MeanSquaredError()]
-        self.test_metric = [torchmetrics.Accuracy(), torchmetrics.MeanSquaredError()]
+        self.training_metric =  torchmetrics.MeanSquaredError()
+        self.validation_metric = torchmetrics.MeanSquaredError()
+        self.test_metric =  torchmetrics.MeanSquaredError()
 
     def forward(self, inputs, diversity=False):
         batch_size = inputs.shape[0]
-        inputs = inputs[:, :, :self.sequence_len] #TODO: to be removed!!
         expert_outputs = self.calculating_experts(inputs)
         gate_outputs = self.calculating_gates(inputs, batch_size)
         product_outputs = self.multiplying_gates_and_experts(expert_outputs, gate_outputs)
 
         output = []
         for task in range(self.num_tasks):
-            aux = self.towers_list[task](product_outputs) 
+            aux = self.towers_list[task](product_outputs[task,:,:]) 
             aux = self.output_list[task](aux)
             output.append(aux)
+
+        output = torch.cat([x.float() for x in output], dim=1)
 
         if diversity:
             return output, expert_outputs  
@@ -122,52 +124,53 @@ class MMoE(pl.LightningModule):
                 final_products = final_product.reshape(1, final_product.shape[0], final_product.shape[1])
             else:
                 final_products = torch.cat((final_products, final_product.reshape(1, final_product.shape[0], final_product.shape[1])), dim=0)
-
         return final_products
 
     def training_step(self, batch, batch_idx):
-        data, targets = batch
+        data, targets = batch['data'], batch['target']
+        data = data[:, :, :self.sequence_len] # TODO: to be removed!!
+        targets = targets[:, :, self.sequence_len + 1] # TODO: to be removed!!
         predictions = self(data)
-        loss = nn.BCELoss(predictions[0], targets[0]) + [nn.MSELoss(prediction, target) for prediction, target in zip(predictions[1,:], targets[1,:])]
+        loss_fn = nn.MSELoss() 
+        loss = loss_fn(predictions, targets)
         return {'loss': loss, 'predictions': predictions, 'targets': targets}
 
     def training_step_end(self, outputs):
-        self.training_metric[0](outputs['predictions'][0], outputs['target'][0])
-        self.training_metric[1](outputs['predictions'][1], outputs['target'][1])
+        self.training_metric(outputs['predictions'], outputs['targets'])
         self.log('loss/train', outputs['loss'])
         self.log('metric/train', self.training_metric)
 
     def validation_step(self, batch, batch_idx):
-        data, targets = batch
+        data, targets = batch['data'], batch['target']
+        data = data[:, :, :self.sequence_len] # TODO: to be removed!!
+        targets = targets[:, :, self.sequence_len + 1] # TODO: to be removed!!
         predictions = self(data)
-        loss = nn.BCELoss(predictions[0], targets[0]) + [nn.MSELoss(prediction, target) for prediction, target in zip(predictions[1,:], targets[1,:])]
+        loss_fn = nn.MSELoss() 
+        loss = loss_fn(predictions, targets)
         return {'loss': loss, 'predictions': predictions, 'targets': targets}
 
-    def validation_epoch_end(self, outputs):
-        self.validation_metric[0](outputs['predictions'][0], outputs['target'][0])
-        self.validation_metric[1](outputs['predictions'][1], outputs['target'][1])
+    def validation_step_end(self, outputs):
+        self.validation_metric(outputs['predictions'], outputs['targets'])
         self.log('loss/val', outputs['loss'])
-        self.log('metric/val', self.training_metric)
+        self.log('metric/val', self.validation_metric)
 
     def test_step(self, batch, batch_idx):
         data, targets = batch
         predictions = self(data)
-        loss = nn.BCELoss(predictions[0], targets[0]) + [nn.MSELoss(prediction, target) for prediction, target in zip(predictions[1,:], targets[1,:])]
+        loss_fn = nn.MSELoss() 
+        loss = loss_fn(predictions, targets)
         return {'loss': loss, 'predictions': predictions, 'targets': targets}
 
-    def test_epoch_end(self, outputs):
-        self.test_metric[0](outputs['predictions'][0], outputs['target'][0])
-        self.test_metric[1](outputs['predictions'][1], outputs['target'][1])
+    def test_step_end(self, outputs):
+        self.test_metric(outputs['predictions'], outputs['targets'])
         self.log('loss/test', outputs['loss'])
         self.log('metric/test', self.test_metric)
 
     def configure_optimizers(self):
-        print(self.hparams.optim)
-        print(self.parameters())
-        return hydra.utils.instantiate(self.parameters(), self.hparams.optim)
+        return hydra.utils.instantiate(self.optimizer, self.parameters()) 
 
     def on_train_start(self):
-        self.logger.log_hyperparams(self.hparams, {"metric/training": [0, 0], "metric/test": [0, 0], "metric/val": [0, 0]})
+        self.logger.log_hyperparams(self.hparams, {"metric/training": 0, "metric/test": 0, "metric/val": 0})
 
 
 """ 

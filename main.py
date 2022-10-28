@@ -2,7 +2,6 @@ import hydra
 import logging
 import pytorch_lightning as pl
 from omegaconf import DictConfig, OmegaConf
-# from project.model.mixture_of_experts import MMoE
 logger = logging.getLogger(__name__)
 
 @hydra.main(config_path="configs", config_name="defaults")

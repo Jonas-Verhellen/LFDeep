@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 class SpikeDataset(Dataset):
     def __init__(self,in_path,target_path):
+        super().__init__()
         self.spike_data = np.load(in_path,mmap_mode='r+')
         self.target_data = np.load(target_path, mmap_mode='r+')
         
@@ -26,6 +27,8 @@ class SpikeDataset(Dataset):
 
 class SpikeDataModule(pl.LightningDataModule):
     def __init__(self, config):
+        super().__init__()
+        self.prepare_data_per_node = True
         self.in_path = config.in_path
         self.target_path = config.target_path
         self.batch_size = config.batch_size
