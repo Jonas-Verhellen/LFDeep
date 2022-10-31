@@ -1,4 +1,5 @@
 import hydra
+import higher
 
 import torch
 import torch.nn as nn
@@ -7,6 +8,10 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 import torchmetrics
 from omegaconf import OmegaConf
+
+
+import numpy as np
+from random import randint
 
 class MMoE(pl.LightningModule):
     def __init__(self, config):
@@ -173,10 +178,9 @@ class MMoE(pl.LightningModule):
         self.logger.log_hyperparams(self.hparams, {"metric/training": 0, "metric/test": 0, "metric/val": 0})
 
 
-""" 
 class MMoEEx(MMoE):
     def __init__(self, config):
-        super(MMoEEx, self).__init__()
+        super(MMoEEx, self).__init__(config)
         self.prob_exclusivity = config.prob_exclusivity
         self.type = config.type 
 
@@ -186,7 +190,7 @@ class MMoEEx(MMoE):
             exclusivity[e] = randint(0, self.num_tasks)
 
         self.exclusivity = exclusivity
-        gate_kernels = torch.rand((self.num_tasks, self.seqlen * self.num_features, self.num_experts)).float()
+        gate_kernels = torch.rand((self.num_tasks, self.sequence_len * self.num_features, self.num_experts)).float()
 
         for expert_number, task_number in enumerate(self.exclusivity):
             if task_number < self.num_tasks + 1:
@@ -198,4 +202,6 @@ class MMoEEx(MMoE):
                     gate_kernels[task_number][:, expert_number] = 0.0
 
         self.gate_kernels = nn.Parameter(gate_kernels, requires_grad=True) 
-"""
+
+  
+
