@@ -1,5 +1,4 @@
 import hydra
-import higher
 
 import torch
 import torch.nn as nn
@@ -27,7 +26,7 @@ class MMoE(pl.LightningModule):
 
         self.use_expert_bias = config.use_expert_bias
         self.use_gate_bias = config.use_gate_bias
-
+        
         self.optimizer = OmegaConf.load(hydra.utils.to_absolute_path(config.optimizer))
 
         self.expert_kernels = nn.ModuleList([hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert))) for _ in range(self.num_experts)])
