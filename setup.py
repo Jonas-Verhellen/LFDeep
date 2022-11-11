@@ -1,13 +1,12 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='project',
+    name='LFDeep',
     version='0.0.1',
-    description='Describe Your Cool Project',
+    description='Multi-Expert Deep learning of Votlage Traces and Spike Times In A Cortical Neuron',
     author='',
     author_email='',
-    # REPLACE WITH YOUR OWN GITHUB PROJECT LINK
-    url='https://github.com/PyTorchLightning/pytorch-lightning-conference-seed',
+    url='https://github.com/Jonas-Verhellen/LFDeep',
     install_requires=['pytorch-lightning'],
     packages=find_packages(),
 )
