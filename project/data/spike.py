@@ -8,7 +8,7 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader, random_split
 from typing import Optional
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__) # Used to track what is happening in the program, makes it much easier to debug the code.
 
 class SpikeDataset(Dataset):
     def __init__(self,in_path,target_path):

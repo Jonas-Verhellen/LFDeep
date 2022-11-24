@@ -17,23 +17,20 @@ class MH(pl.LightningModule):
     all of the tasks will use this shared bottom before the data is sent into the towers. '''
     def __init__(self, config): #num_tasks, num_features, n_layers=1, seqlen=400
         super(MH, self).__init__()
-        self.saveparameters()
+        self.save_hyperparameters()
         self.num_tasks = config.num_tasks # This decides how many feed forward neural networks we are going to feed our data to.
         self.num_layers = config.num_layers # This is not currently used?
         self.num_units = config.num_units # Number of neurons in the hidden layer of the towers.
         self.num_shared_bottom = config.num_shared_bottom # This should be set to 1 in the config file, given that we have one shared convolutional layer.
-
+        
         self.sequence_len = config.sequence_len
         self.num_features = config.num_features
 
-        self.optimizer = OmegaConf.load(hydra.utils.to_abolute_path(config.optimizer))
-
-        # We create a "list" consisting of only one element, namely the shared bottom network. The kernel defines the size of the input patch.
-        self.expert_kernels = nn.ModuleList([hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert))) ])
+        self.optimizer = OmegaConf.load(hydra.utils.to_absolute_path(config.optimizer))
 
         # The config.expert calls on function TemporalConvNet from temporal_convolution file.
-        self.shared_bottom = nn.ModuleList([hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert))) ])
-        output_features = self.shared_bottom[0].num_channels[-1]
+        self.shared_bottom = hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert)))
+        output_features = self.shared_bottom.num_channels[-1] # Final channel of tcn. (size)
 
         # Now we can define our towers, which essentialy are just feed forward neural networks:
         self.towers_list = nn.ModuleList([nn.Linear(self.sequence_len*output_features, self.num_units) for _ in range(self.num_tasks)])
@@ -43,37 +40,42 @@ class MH(pl.LightningModule):
         self.training_metric =  torchmetrics.MeanSquaredError()
         self.validation_metric = torchmetrics.MeanSquaredError()
         self.test_metric =  torchmetrics.MeanSquaredError()
-
-        #gate_kernels = torch.rand((self.num_tasks, self.sequence_len * self.num_features, self.num_shared_bottom)).float()
-        #self.gate_kernels = nn.Parameter(gate_kernels, requires_grad=True)
+        
 
     """ I am really uncertain about the following functions --> have to check if they give reasonable results when run on computer which has
     the right conda environment."""
 
     def forward(self, inputs, diversity = False):
-        batch_size = inputs.shape[0]
 
-        shared_bottom_outputs = calculating_shared_bottom(inputs)
+        shared_bottom_outputs = self.calculating_shared_bottom(inputs)
 
         output = []
         for task in range(self.num_tasks):
-            aux = self.towers_list[task](shared_bottom_outputs[task,:,:])
+    
+            aux = self.towers_list[task](shared_bottom_outputs)
+
             aux = self.output_list[task](aux)
             output.append(aux) # Here we append the output corresponding to each specific task.
 
         output = torch.cat([x.float() for x in output], dim=1) # links togheter the given sequence tensors in the given dimension.
+        return output
 
 
     def calculating_shared_bottom(self, inputs):
-        """I am not sure if this step is nescessary when we only have one shared bottom instead of a list of experts."""
 
-        aux = self.expert_kernels(inputs) # Here we collect the list consisting of the share bottom kernel.
-        shared_bottom_outputs = aux.reshape(1, aux.shape[0], aux.shape[1]) # Pretty sure this just adds another list on top of the preexisting ones (add a dim).
-        shared_bottom_outputs = F.relu(shared_bottom_outputs) # Perform the relu activation function on the reshaped output.
+        aux = self.shared_bottom(inputs) # Here we collect the list consisting of the share bottom kernel.
+        shared_bottom_outputs = F.relu(aux) # Perform the relu activation function on the reshaped output.
 
         return shared_bottom_outputs
 
-
+    def training_step(self, batch, batch_idx):
+        data, targets = batch['data'], batch['target']
+        data = data[:, :, :self.sequence_len] # TODO: to be removed!!
+        targets = targets[:, :, self.sequence_len + 1] # TODO: to be removed!!
+        predictions = self(data)
+        loss_fn = nn.MSELoss()
+        loss = loss_fn(predictions, targets)
+        return {'loss': loss, 'predictions': predictions, 'targets': targets}
 
     def training_step_end(self, outputs):
         self.training_metric(outputs['predictions'], outputs['targets'])
@@ -111,7 +113,7 @@ class MH(pl.LightningModule):
 
     def on_train_start(self):
         self.logger.log_hyperparams(self.hparams, {"metric/training": 0, "metric/test": 0, "metric/val": 0})
-
+    
 
 
 

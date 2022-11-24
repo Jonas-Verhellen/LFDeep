@@ -2,13 +2,16 @@
 _target_: project.model.mixture_of_experts.MH
 
 config:
-    num_tasks: 641
-    num_layers: 1
-    num_units: 5
-    num_shared_bottom: 1 # This should always be set to 1, given that we have one shared convolutional layer. 
+  num_tasks: 641
+  num_layers: 1
+  num_units: 5
+  num_shared_bottom: 1 # This should always be set to 1, given that we have one shared convolutional layer. 
 
-    sequence_len: 100
-    num_features: 1278 
+  sequence_len: 100
+  num_features: 1278
 
-    expert: configs/model/tcn.yaml
-    optimizer: configs/optim/adam.yaml
+  use_expert_bias: no
+  use_gate_bias: no 
+
+  expert: configs/model/tcn.yaml
+  optimizer: configs/optim/adam.yaml
