@@ -71,7 +71,7 @@ class TemporalConvNet(pl.LightningModule):
         self.network = nn.Sequential(*layers)
 
     def forward(self, x):
-        '''Here we pass through our whole temporal convolutional net and generate an output. '''
+        '''Pass through the whole temporal convolutional net and generate an output. '''
         out = self.network(x)
         out = torch.flatten(out, start_dim=1) # Here we flatten the output from the convolutional neural network. 
         return out

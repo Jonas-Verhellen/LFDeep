@@ -15,38 +15,34 @@ from random import randint
 class MH(pl.LightningModule):
     '''This is the Multi task Hard- parameter sharing model. For this model we only use one convolutional expert, defined as the shared bottom. This means that
     all of the tasks will use this shared bottom before the data is sent into the towers. '''
-    def __init__(self, config): #num_tasks, num_features, n_layers=1, seqlen=400
+    def __init__(self, config):
         super(MH, self).__init__()
         self.save_hyperparameters()
         self.num_tasks = config.num_tasks # This decides how many feed forward neural networks we are going to feed our data to.
-        self.num_layers = config.num_layers # This is not currently used?
+        self.num_layers = config.num_layers
         self.num_units = config.num_units # Number of neurons in the hidden layer of the towers.
         self.num_shared_bottom = config.num_shared_bottom # This should be set to 1 in the config file, given that we have one shared convolutional layer.
         
-        self.sequence_len = config.sequence_len
+        self.sequence_len = config.sequence_len # Length of input sequence. 
         self.num_features = config.num_features
 
         self.optimizer = OmegaConf.load(hydra.utils.to_absolute_path(config.optimizer))
 
         # The config.expert calls on function TemporalConvNet from temporal_convolution file.
-        self.shared_bottom = hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert)))
+        self.shared_bottom = hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert))) # (the shared bottom consists of only one expert).
         output_features = self.shared_bottom.num_channels[-1] # Final channel of tcn. (size)
 
         # Now we can define our towers, which essentialy are just feed forward neural networks:
         self.towers_list = nn.ModuleList([nn.Linear(self.sequence_len*output_features, self.num_units) for _ in range(self.num_tasks)])
         # Which feeds into the output list:
         self.output_list = nn.ModuleList([nn.Linear(self.num_units, 1) for _ in range(self.num_tasks)])
-        # Now we want to define the metrics, whcih are used to evaluate the performance of our model:
+        # Now we want to define the metrics, which are used to evaluate the performance of our model:
         self.training_metric =  torchmetrics.MeanSquaredError()
         self.validation_metric = torchmetrics.MeanSquaredError()
         self.test_metric =  torchmetrics.MeanSquaredError()
-        
-
-    """ I am really uncertain about the following functions --> have to check if they give reasonable results when run on computer which has
-    the right conda environment."""
 
     def forward(self, inputs, diversity = False):
-
+        """ This is the function were we generate our output from all the different tasks. """ 
         shared_bottom_outputs = self.calculating_shared_bottom(inputs)
 
         output = []
@@ -57,13 +53,14 @@ class MH(pl.LightningModule):
             aux = self.output_list[task](aux)
             output.append(aux) # Here we append the output corresponding to each specific task.
 
-        output = torch.cat([x.float() for x in output], dim=1) # links togheter the given sequence tensors in the given dimension.
+        output = torch.cat([x.float() for x in output], dim=1) # Links togheter the given sequence tensors in the given dimension.
         return output
 
 
     def calculating_shared_bottom(self, inputs):
+        """ Calculating the shared bottom, where the activation function is ReLU."""
 
-        aux = self.shared_bottom(inputs) # Here we collect the list consisting of the share bottom kernel.
+        aux = self.shared_bottom(inputs) # Here we collect the list consisting of the shared bottom kernel.
         shared_bottom_outputs = F.relu(aux) # Perform the relu activation function on the reshaped output.
 
         return shared_bottom_outputs
@@ -113,16 +110,6 @@ class MH(pl.LightningModule):
 
     def on_train_start(self):
         self.logger.log_hyperparams(self.hparams, {"metric/training": 0, "metric/test": 0, "metric/val": 0})
-    
-
-
-
-
-
-
-
-
-
 
 class MMoE(pl.LightningModule):
     def __init__(self, config):
