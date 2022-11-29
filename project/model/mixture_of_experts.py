@@ -12,6 +12,105 @@ from omegaconf import OmegaConf
 import numpy as np
 from random import randint
 
+class MH(pl.LightningModule):
+    '''This is the Multi task Hard- parameter sharing model. For this model we only use one convolutional expert, defined as the shared bottom. This means that
+    all of the tasks will use this shared bottom before the data is sent into the towers. '''
+    def __init__(self, config):
+        super(MH, self).__init__()
+        self.save_hyperparameters()
+        self.num_tasks = config.num_tasks # This decides how many feed forward neural networks we are going to feed our data to.
+        self.num_layers = config.num_layers
+        self.num_units = config.num_units # Number of neurons in the hidden layer of the towers.
+        self.num_shared_bottom = config.num_shared_bottom # This should be set to 1 in the config file, given that we have one shared convolutional layer.
+        
+        self.sequence_len = config.sequence_len # Length of input sequence. 
+        self.num_features = config.num_features
+
+        self.optimizer = OmegaConf.load(hydra.utils.to_absolute_path(config.optimizer))
+
+        # The config.expert calls on function TemporalConvNet from temporal_convolution file.
+        self.shared_bottom = hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert))) # (the shared bottom consists of only one expert).
+        output_features = self.shared_bottom.num_channels[-1] # Final channel of tcn. (size)
+
+        # Now we can define our towers, which essentialy are just feed forward neural networks:
+        self.towers_list = nn.ModuleList([nn.Linear(self.sequence_len*output_features, self.num_units) for _ in range(self.num_tasks)])
+        # Which feeds into the output list:
+        self.output_list = nn.ModuleList([nn.Linear(self.num_units, 1) for _ in range(self.num_tasks)])
+        # Now we want to define the metrics, which are used to evaluate the performance of our model:
+        self.training_metric =  torchmetrics.MeanSquaredError()
+        self.validation_metric = torchmetrics.MeanSquaredError()
+        self.test_metric =  torchmetrics.MeanSquaredError()
+
+    def forward(self, inputs, diversity = False):
+        """ This is the function were we generate our output from all the different tasks. """ 
+        shared_bottom_outputs = self.calculating_shared_bottom(inputs)
+
+        output = []
+        for task in range(self.num_tasks):
+    
+            aux = self.towers_list[task](shared_bottom_outputs)
+
+            aux = self.output_list[task](aux)
+            output.append(aux) # Here we append the output corresponding to each specific task.
+
+        output = torch.cat([x.float() for x in output], dim=1) # Links togheter the given sequence tensors in the given dimension.
+        return output
+
+
+    def calculating_shared_bottom(self, inputs):
+        """ Calculating the shared bottom, where the activation function is ReLU."""
+
+        aux = self.shared_bottom(inputs) # Here we collect the list consisting of the shared bottom kernel.
+        shared_bottom_outputs = F.relu(aux) # Perform the relu activation function on the reshaped output.
+
+        return shared_bottom_outputs
+
+    def training_step(self, batch, batch_idx):
+        data, targets = batch['data'], batch['target']
+        data = data[:, :, :self.sequence_len] # TODO: to be removed!!
+        targets = targets[:, :, self.sequence_len + 1] # TODO: to be removed!!
+        predictions = self(data)
+        loss_fn = nn.MSELoss()
+        loss = loss_fn(predictions, targets)
+        return {'loss': loss, 'predictions': predictions, 'targets': targets}
+
+    def training_step_end(self, outputs):
+        self.training_metric(outputs['predictions'], outputs['targets'])
+        self.log('loss/train', outputs['loss'])
+        self.log('metric/train', self.training_metric)
+
+    def validation_step(self, batch, batch_idx):
+        data, targets = batch['data'], batch['target']
+        data = data[:, :, :self.sequence_len] # TODO: to be removed!!
+        targets = targets[:, :, self.sequence_len + 1] # TODO: to be removed!!
+        predictions = self(data)
+        loss_fn = nn.MSELoss()
+        loss = loss_fn(predictions, targets)
+        return {'loss': loss, 'predictions': predictions, 'targets': targets}
+
+    def validation_step_end(self, outputs):
+        self.validation_metric(outputs['predictions'], outputs['targets'])
+        self.log('loss/val', outputs['loss'])
+        self.log('metric/val', self.validation_metric)
+
+    def test_step(self, batch, batch_idx):
+        data, targets = batch
+        predictions = self(data)
+        loss_fn = nn.MSELoss()
+        loss = loss_fn(predictions, targets)
+        return {'loss': loss, 'predictions': predictions, 'targets': targets}
+
+    def test_step_end(self, outputs):
+        self.test_metric(outputs['predictions'], outputs['targets'])
+        self.log('loss/test', outputs['loss'])
+        self.log('metric/test', self.test_metric)
+
+    def configure_optimizers(self):
+        return hydra.utils.instantiate(self.optimizer, self.parameters())
+
+    def on_train_start(self):
+        self.logger.log_hyperparams(self.hparams, {"metric/training": 0, "metric/test": 0, "metric/val": 0})
+
 class MMoE(pl.LightningModule):
     def __init__(self, config):
         super(MMoE, self).__init__()
@@ -26,10 +125,11 @@ class MMoE(pl.LightningModule):
 
         self.use_expert_bias = config.use_expert_bias
         self.use_gate_bias = config.use_gate_bias
-        
+
         self.optimizer = OmegaConf.load(hydra.utils.to_absolute_path(config.optimizer))
 
         self.expert_kernels = nn.ModuleList([hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert))) for _ in range(self.num_experts)])
+
         output_features = self.expert_kernels[0].num_channels[-1]
 
         self.towers_list = nn.ModuleList([nn.Linear(self.sequence_len*output_features, self.num_units) for _ in range(self.num_tasks)])
@@ -64,20 +164,20 @@ class MMoE(pl.LightningModule):
 
         output = []
         for task in range(self.num_tasks):
-            aux = self.towers_list[task](product_outputs[task,:,:]) 
+            aux = self.towers_list[task](product_outputs[task,:,:])
             aux = self.output_list[task](aux)
             output.append(aux)
 
         output = torch.cat([x.float() for x in output], dim=1)
 
         if diversity:
-            return output, expert_outputs  
+            return output, expert_outputs
         else:
             return output
 
     def calculating_experts(self, inputs):
-        """ 
-        Calculating the experts, f_{i}(x) = activation(W_{i} * x + b), where activation is ReLU according to the paper (E x n x U) 
+        """
+        Calculating the experts, f_{i}(x) = activation(W_{i} * x + b), where activation is ReLU according to the paper (E x n x U)
         """
 
         for i in range(self.num_experts):
@@ -95,7 +195,7 @@ class MMoE(pl.LightningModule):
         return expert_outputs
 
     def calculating_gates(self, inputs, batch_size):
-        """ 
+        """
         Calculating the gates, g^{k}(x) = activation(W_{gk} * x + b), where activation is softmax according to the paper T x n x E
         """
 
@@ -112,8 +212,8 @@ class MMoE(pl.LightningModule):
 
         gate_outputs = F.softmax(gate_outputs, dim=2)
         return gate_outputs
-    
-    def multiplying_gates_and_experts(self, expert_outputs, gate_outputs): 
+
+    def multiplying_gates_and_experts(self, expert_outputs, gate_outputs):
         """
         Multiplying gates and experts
         """
@@ -143,6 +243,7 @@ class MMoE(pl.LightningModule):
         loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
         return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
 
+
     def training_step_end(self, outputs):
         self.training_metric(outputs['predictions'], outputs['targets'])
         self.training_metric_spike(outputs['predictions_spike'].int(),outputs['targets_spike'].int())
@@ -168,12 +269,14 @@ class MMoE(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         data, targets = batch
+
         with torch.no_grad():
             predictions = self(data)
             predictions_spike, targets_spike = predictions[:,639], targets[:,639,-1]
             predictions, targets = torch.cat([predictions[:,:639],predictions[:,640,None]],1), torch.cat([targets[:,:639,-1],targets[:,640,-1,None]],1)
             loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
         return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
+
 
     def test_step_end(self, outputs):
         self.test_metric(outputs['predictions'], outputs['targets'])
@@ -183,7 +286,7 @@ class MMoE(pl.LightningModule):
         self.log('metric/test/spike',self.test_metric_spike)
 
     def configure_optimizers(self):
-        return hydra.utils.instantiate(self.optimizer, self.parameters()) 
+        return hydra.utils.instantiate(self.optimizer, self.parameters())
 
     def on_train_start(self):
         self.logger.log_hyperparams(self.hparams, {"metric/training": 0, "metric/test": 0, "metric/val": 0})
@@ -193,7 +296,7 @@ class MMoEEx(MMoE):
     def __init__(self, config):
         super(MMoEEx, self).__init__(config)
         self.prob_exclusivity = config.prob_exclusivity
-        self.type = config.type 
+        self.type = config.type
 
         exclusivity = np.repeat(self.num_tasks + 1, self.num_experts)
         to_add = int(self.num_experts * self.prob_exclusivity)
@@ -212,7 +315,4 @@ class MMoEEx(MMoE):
                 else:
                     gate_kernels[task_number][:, expert_number] = 0.0
 
-        self.gate_kernels = nn.Parameter(gate_kernels, requires_grad=True) 
-
-  
-
+        self.gate_kernels = nn.Parameter(gate_kernels, requires_grad=True)

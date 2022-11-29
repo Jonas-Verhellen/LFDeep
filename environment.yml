@@ -98,4 +98,4 @@ dependencies:
     - importlib-resources==5.10.0
     - omegaconf==2.2.3
     - setuptools==59.5.0
-prefix: /home/jove/.conda/envs/lfdeep
+prefix: /home/sebastian/.conda/envs/lfdeep
