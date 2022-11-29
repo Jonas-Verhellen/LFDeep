@@ -3,6 +3,7 @@ import torch.nn as nn
 from torch.nn.utils import weight_norm
 import torch.nn.functional as F
 import pytorch_lightning as pl
+torch.autograd.set_detect_anomaly(True)
 
 class Chomp1d(pl.LightningModule):
     """Pad by (k-1)*d on the two sides of the input for convolution, and then use Chomp1d to remove the (k-1)*d elements on the right.

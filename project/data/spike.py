@@ -14,14 +14,14 @@ class SpikeDataset(Dataset):
     def __init__(self,in_path,target_path):
         super().__init__()
         self.spike_data = np.load(in_path,mmap_mode='r+')
-        self.target_data = np.load(target_path, mmap_mode='r+')
+        self.target_data = np.load(target_path, mmap_mode='r+')[:,:,None]
         
     def __len__(self):
         return len(self.spike_data)
     
     def __getitem__(self, idx):
         data_sample = torch.from_numpy(self.spike_data[:,:,idx]).float()
-        target_sample = torch.from_numpy(self.target_data[:,:,idx]).float()
+        target_sample = torch.from_numpy(self.target_data[:,idx]).float()
         sample = {'data': data_sample, 'target': target_sample}
         return sample
 

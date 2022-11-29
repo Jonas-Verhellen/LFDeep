@@ -3,6 +3,8 @@ import logging
 import pytorch_lightning as pl
 from omegaconf import DictConfig, OmegaConf
 logger = logging.getLogger(__name__)
+import torch
+torch.cuda.empty_cache()
 
 @hydra.main(config_path="configs", config_name="defaults")
 def main(config: DictConfig) -> None:
@@ -17,9 +19,9 @@ def main(config: DictConfig) -> None:
     tensorboard = pl.loggers.TensorBoardLogger(".", "", "", log_graph=True, default_hp_metric=False)
     callbacks = [pl.callbacks.ModelCheckpoint(monitor='loss/val'), pl.callbacks.EarlyStopping(monitor='loss/val', patience=100)]
 
-    trainer = pl.Trainer(**OmegaConf.to_container(config.trainer), logger=tensorboard, callbacks=callbacks)
+    trainer = pl.Trainer(**OmegaConf.to_container(config.trainer), logger=tensorboard, callbacks=callbacks, precision=16, accelerator='gpu', devices=1)
 
-    trainer.fit(model, datamodule=data_module) # try this on think 
+    trainer.fit(model, datamodule=data_module) 
     # trainer.test(model, datamodule=data_module)  # Optional
 
 
