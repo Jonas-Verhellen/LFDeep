@@ -19,7 +19,7 @@ def main(config: DictConfig) -> None:
     tensorboard = pl.loggers.TensorBoardLogger(".", "", "", log_graph=True, default_hp_metric=False)
     callbacks = [pl.callbacks.ModelCheckpoint(monitor='loss/val'), pl.callbacks.EarlyStopping(monitor='loss/val', patience=100)]
 
-    trainer = pl.Trainer(**OmegaConf.to_container(config.trainer), logger=tensorboard, callbacks=callbacks, precision=16, accelerator='gpu', devices=1)
+    trainer = pl.Trainer(**OmegaConf.to_container(config.trainer), logger=tensorboard, callbacks=callbacks)#, precision=16, accelerator='gpu', devices=1)
 
     trainer.fit(model, datamodule=data_module) 
     # trainer.test(model, datamodule=data_module)  # Optional

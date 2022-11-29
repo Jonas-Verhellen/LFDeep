@@ -37,9 +37,15 @@ class MH(pl.LightningModule):
         # Which feeds into the output list:
         self.output_list = nn.ModuleList([nn.Linear(self.num_units, 1) for _ in range(self.num_tasks)])
         # Now we want to define the metrics, which are used to evaluate the performance of our model:
+        self.loss_fn = nn.MSELoss()
+        self.loss_fn_spikes = nn.BCEWithLogitsLoss()
+
         self.training_metric =  torchmetrics.MeanSquaredError()
+        self.training_metric_spike = torchmetrics.Accuracy()
         self.validation_metric = torchmetrics.MeanSquaredError()
+        self.validation_metric_spike = torchmetrics.Accuracy()
         self.test_metric =  torchmetrics.MeanSquaredError()
+        self.test_metric_spike = torchmetrics.Accuracy()
 
     def forward(self, inputs, diversity = False):
         """ This is the function were we generate our output from all the different tasks. """ 
@@ -67,43 +73,53 @@ class MH(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         data, targets = batch['data'], batch['target']
-        data = data[:, :, :self.sequence_len] # TODO: to be removed!!
-        targets = targets[:, :, self.sequence_len + 1] # TODO: to be removed!!
         predictions = self(data)
-        loss_fn = nn.MSELoss()
-        loss = loss_fn(predictions, targets)
-        return {'loss': loss, 'predictions': predictions, 'targets': targets}
+        predictions_spike, targets_spike = predictions[:,639], targets[:,639,-1]
+        predictions, targets = torch.cat([predictions[:,:639],predictions[:,640,None]],1), torch.cat([targets[:,:639,-1],targets[:,640,-1,None]],1)
+        loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
+        return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
+
 
     def training_step_end(self, outputs):
         self.training_metric(outputs['predictions'], outputs['targets'])
+        self.training_metric_spike(outputs['predictions_spike'].int(),outputs['targets_spike'].int())
         self.log('loss/train', outputs['loss'])
         self.log('metric/train', self.training_metric)
+        self.log('metric/train/spike', self.training_metric_spike)
 
     def validation_step(self, batch, batch_idx):
         data, targets = batch['data'], batch['target']
-        data = data[:, :, :self.sequence_len] # TODO: to be removed!!
-        targets = targets[:, :, self.sequence_len + 1] # TODO: to be removed!!
-        predictions = self(data)
-        loss_fn = nn.MSELoss()
-        loss = loss_fn(predictions, targets)
-        return {'loss': loss, 'predictions': predictions, 'targets': targets}
+        with torch.no_grad():
+            predictions = self(data)
+            predictions_spike, targets_spike = predictions[:,639], targets[:,639,-1]
+            predictions, targets = torch.cat([predictions[:,:639],predictions[:,640,None]],1), torch.cat([targets[:,:639,-1],targets[:,640,-1,None]],1)
+            loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
+        return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
 
     def validation_step_end(self, outputs):
         self.validation_metric(outputs['predictions'], outputs['targets'])
+        self.validation_metric_spike(outputs['predictions_spike'].int(),outputs['targets_spike'].int())
         self.log('loss/val', outputs['loss'])
         self.log('metric/val', self.validation_metric)
+        self.log('metric/val/spike',self.validation_metric_spike)
 
     def test_step(self, batch, batch_idx):
         data, targets = batch
-        predictions = self(data)
-        loss_fn = nn.MSELoss()
-        loss = loss_fn(predictions, targets)
-        return {'loss': loss, 'predictions': predictions, 'targets': targets}
+
+        with torch.no_grad():
+            predictions = self(data)
+            predictions_spike, targets_spike = predictions[:,639], targets[:,639,-1]
+            predictions, targets = torch.cat([predictions[:,:639],predictions[:,640,None]],1), torch.cat([targets[:,:639,-1],targets[:,640,-1,None]],1)
+            loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
+        return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
+
 
     def test_step_end(self, outputs):
         self.test_metric(outputs['predictions'], outputs['targets'])
+        self.test_metric_spike(outputs['predictions_spike'].int(),outputs['targets_spike'].int())
         self.log('loss/test', outputs['loss'])
         self.log('metric/test', self.test_metric)
+        self.log('metric/test/spike',self.test_metric_spike)
 
     def configure_optimizers(self):
         return hydra.utils.instantiate(self.optimizer, self.parameters())
