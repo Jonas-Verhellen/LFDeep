@@ -3,9 +3,9 @@ _target_: project.data.spike.SpikeDataModule
 
 config:
   sequence_len: 100
-  in_path: /dcip/LFDeepData/input_spikes.npy
-  target_path: /dcip/LFDeepData/output.npy
-  batch_size: 32
-  num_workers: 2
+  in_path: /scratch/users/constb/Data/input_data_new.npy
+  target_path: /scratch/users/constb/Data/output_data_new.npy
+  batch_size: 320
+  num_workers: 64
 
 

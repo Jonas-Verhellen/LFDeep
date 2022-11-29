@@ -3,15 +3,15 @@ _target_: project.model.mixture_of_experts.MMoE
 
 config:
   num_tasks: 641
-  num_experts: 2
+  num_experts: 5
   num_layers: 1
-  num_units: 5
+  num_units: 20
 
   sequence_len: 100
   num_features: 1278
 
-  use_expert_bias: no
-  use_gate_bias: no 
+  use_expert_bias: yes
+  use_gate_bias: yes
 
   expert: configs/model/tcn.yaml
   optimizer: configs/optim/adam.yaml
