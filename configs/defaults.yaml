@@ -1,6 +1,6 @@
 defaults:
   - data: spike.yaml  
-  - model: MH.yaml
+  - model: mmoe.yaml
 
   - override hydra/job_logging: colorlog
   - override hydra/hydra_logging: colorlog

@@ -12,6 +12,7 @@ from omegaconf import OmegaConf
 import numpy as np
 from random import randint
 
+
 class MH(pl.LightningModule):
     '''This is the Multi task Hard- parameter sharing model. For this model we only use one convolutional expert, defined as the shared bottom. This means that
     all of the tasks will use this shared bottom before the data is sent into the towers. '''
@@ -262,7 +263,7 @@ class MMoE(pl.LightningModule):
 
     def training_step_end(self, outputs):
         self.training_metric(outputs['predictions'], outputs['targets'])
-        self.training_metric_spike(outputs['predictions_spike'].int(),outputs['targets_spike'].int())
+        self.training_metric_spike(F.sigmoid(outputs['predictions_spike']).int(),F.sigmoid(outputs['targets_spike']).int())
         self.log('loss/train', outputs['loss'])
         self.log('metric/train', self.training_metric)
         self.log('metric/train/spike', self.training_metric_spike)
@@ -278,7 +279,7 @@ class MMoE(pl.LightningModule):
 
     def validation_step_end(self, outputs):
         self.validation_metric(outputs['predictions'], outputs['targets'])
-        self.validation_metric_spike(outputs['predictions_spike'].int(),outputs['targets_spike'].int())
+        self.validation_metric_spike(F.sigmoid(outputs['predictions_spike']).int(),F.sigmoid(outputs['targets_spike']).int())
         self.log('loss/val', outputs['loss'])
         self.log('metric/val', self.validation_metric)
         self.log('metric/val/spike',self.validation_metric_spike)
@@ -296,7 +297,7 @@ class MMoE(pl.LightningModule):
 
     def test_step_end(self, outputs):
         self.test_metric(outputs['predictions'], outputs['targets'])
-        self.test_metric_spike(outputs['predictions_spike'].int(),outputs['targets_spike'].int())
+        self.test_metric_spike(F.sigmoid(outputs['predictions_spike']).int(),F.sigmoid(outputs['targets_spike']).int())
         self.log('loss/test', outputs['loss'])
         self.log('metric/test', self.test_metric)
         self.log('metric/test/spike',self.test_metric_spike)
