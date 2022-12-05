@@ -80,10 +80,9 @@ class MH(pl.LightningModule):
         loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
         return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
 
-
     def training_step_end(self, outputs):
         self.training_metric(outputs['predictions'], outputs['targets'])
-        self.training_metric_spike(outputs['predictions_spike'].int(),outputs['targets_spike'].int())
+        self.training_metric_spike(F.sigmoid(outputs['predictions_spike']).int(),F.sigmoid(outputs['targets_spike']).int())
         self.log('loss/train', outputs['loss'])
         self.log('metric/train', self.training_metric)
         self.log('metric/train/spike', self.training_metric_spike)
@@ -99,7 +98,7 @@ class MH(pl.LightningModule):
 
     def validation_step_end(self, outputs):
         self.validation_metric(outputs['predictions'], outputs['targets'])
-        self.validation_metric_spike(outputs['predictions_spike'].int(),outputs['targets_spike'].int())
+        self.validation_metric_spike(F.sigmoid(outputs['predictions_spike']).int(),F.sigmoid(outputs['targets_spike']).int())
         self.log('loss/val', outputs['loss'])
         self.log('metric/val', self.validation_metric)
         self.log('metric/val/spike',self.validation_metric_spike)
@@ -117,7 +116,7 @@ class MH(pl.LightningModule):
 
     def test_step_end(self, outputs):
         self.test_metric(outputs['predictions'], outputs['targets'])
-        self.test_metric_spike(outputs['predictions_spike'].int(),outputs['targets_spike'].int())
+        self.test_metric_spike(F.sigmoid(outputs['predictions_spike']).int(),F.sigmoid(outputs['targets_spike']).int())
         self.log('loss/test', outputs['loss'])
         self.log('metric/test', self.test_metric)
         self.log('metric/test/spike',self.test_metric_spike)
@@ -127,6 +126,7 @@ class MH(pl.LightningModule):
 
     def on_train_start(self):
         self.logger.log_hyperparams(self.hparams, {"metric/training": 0, "metric/test": 0, "metric/val": 0})
+
 
 class MMoE(pl.LightningModule):
     def __init__(self, config):
