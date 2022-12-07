@@ -68,7 +68,7 @@ class MH(pl.LightningModule):
         """ Calculating the shared bottom, where the activation function is ReLU."""
 
         aux = self.shared_bottom(inputs) # Here we collect the list consisting of the shared bottom kernel.
-        shared_bottom_outputs = F.relu(aux) # Perform the relu activation function on the reshaped output.
+        shared_bottom_outputs = F.relu(aux,inplace=False) # Perform the relu activation function on the reshaped output.
 
         return shared_bottom_outputs
 
@@ -142,7 +142,6 @@ class MMoE(pl.LightningModule):
 
         self.use_expert_bias = config.use_expert_bias
         self.use_gate_bias = config.use_gate_bias
-
         self.optimizer = OmegaConf.load(hydra.utils.to_absolute_path(config.optimizer))
 
         self.expert_kernels = nn.ModuleList([hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert))) for _ in range(self.num_experts)])
@@ -175,6 +174,8 @@ class MMoE(pl.LightningModule):
 
     def forward(self, inputs, diversity=False):
         batch_size = inputs.shape[0]
+        print('hi')
+
         expert_outputs = self.calculating_experts(inputs)
         gate_outputs = self.calculating_gates(inputs, batch_size)
         product_outputs = self.multiplying_gates_and_experts(expert_outputs, gate_outputs)
@@ -208,7 +209,7 @@ class MMoE(pl.LightningModule):
             for expert in range(self.num_experts):
                     expert_bias = self.expert_bias[expert]
                     expert_outputs[expert] = expert_outputs[expert].add(expert_bias[None, :])
-        expert_outputs = F.relu(expert_outputs,inplace=True)
+        expert_outputs = F.relu(expert_outputs,inplace=False)
         return expert_outputs
 
     def calculating_gates(self, inputs, batch_size):

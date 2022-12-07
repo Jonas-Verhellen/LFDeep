@@ -3,7 +3,7 @@ _target_: project.model.temporal_convolution.TemporalConvNet
 
 config:
   num_inputs: 1278
-  num_channels: [32,8]
+  num_channels: [32,16,8]
   kernel_size: 54
   dropout: 0.2
 
