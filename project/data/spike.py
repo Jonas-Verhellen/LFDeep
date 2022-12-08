@@ -13,15 +13,17 @@ logger = logging.getLogger(__name__) # Used to track what is happening in the pr
 class SpikeDataset(Dataset):
     def __init__(self,in_path,target_path):
         super().__init__()
-        self.spike_data = np.load(in_path,mmap_mode='r+')
-        self.target_data = np.load(target_path, mmap_mode='r+')[:,:,None]
-        
+        self.spike_data = np.swapaxes(np.load(in_path,mmap_mode='r+').T,1,2)
+        self.target_data = np.load(target_path, mmap_mode='r+').T[:,:,None]
+
+ 
     def __len__(self):
         return len(self.spike_data)
+
     
     def __getitem__(self, idx):
-        data_sample = torch.from_numpy(self.spike_data[:,:,idx]).float()
-        target_sample = torch.from_numpy(self.target_data[:,idx]).float()
+        data_sample = torch.from_numpy(self.spike_data[idx]).float()
+        target_sample = torch.from_numpy(self.target_data[idx]).float()
         sample = {'data': data_sample, 'target': target_sample}
         return sample
 
@@ -40,6 +42,7 @@ class SpikeDataModule(pl.LightningDataModule):
             train_set_size = int(len(train_set_full) * 0.9)
             valid_set_size = len(train_set_full) - train_set_size
             self.train, self.validate = random_split(train_set_full, [train_set_size, valid_set_size])
+            print('hi')
 
         if stage == "test" or stage is None:
             self.test = SpikeDataset(self.in_path, self.target_path)
