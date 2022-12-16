@@ -3,8 +3,7 @@ _target_: project.model.mixture_of_experts.MMoE
 
 config:
   num_tasks: 641
-  num_experts: 5
-  num_layers: 1
+  num_experts: 10
   num_units: 20
 
   sequence_len: 100

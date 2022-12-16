@@ -1,489 +1,0 @@
-main.py:9: UserWarning: 
-The version_base parameter is not specified.
-Please specify a compatability version level, or None.
-Will assume defaults for version 1.1
-  @hydra.main(config_path="configs", config_name="defaults")
-/itf-fi-ml/home/constb/.conda/envs/lfdeep/lib/python3.7/site-packages/hydra/_internal/defaults_list.py:251: UserWarning: In 'defaults': Defaults list is missing `_self_`. See https://hydra.cc/docs/upgrades/1.0_to_1.1/default_composition_order for more information
-  warnings.warn(msg, UserWarning)
-/itf-fi-ml/home/constb/.conda/envs/lfdeep/lib/python3.7/site-packages/hydra/_internal/hydra.py:127: UserWarning: Future Hydra versions will no longer change working directory at job runtime by default.
-See https://hydra.cc/docs/next/upgrades/1.1_to_1.2/changes_to_job_working_dir/ for more information.
-  configure_logging=with_log_configuration,
-Global seed set to 2509
-[[36m2022-12-06 14:49:50,376[0m][[34m__main__[0m][[32mINFO[0m] - 
-data:
-  _target_: project.data.spike.SpikeDataModule
-  config:
-    sequence_len: 100
-    in_path: /scratch/users/constb/Data/input_data_new.npy
-    target_path: /scratch/users/constb/Data/output_data_new.npy
-    batch_size: 2
-    num_workers: 64
-model:
-  _target_: project.model.mixture_of_experts.MMoE
-  config:
-    num_tasks: 641
-    num_experts: 2
-    num_layers: 1
-    num_units: 5
-    sequence_len: 100
-    num_features: 1278
-    use_expert_bias: true
-    use_gate_bias: true
-    expert: configs/model/tcn.yaml
-    optimizer: configs/optim/adam.yaml
-trainer:
-  benchmark: true
-  max_epochs: 100
-  log_every_n_steps: 1
-[0m
-GPU available: True (cuda), used: False
-TPU available: False, using: 0 TPU cores
-IPU available: False, using: 0 IPUs
-HPU available: False, using: 0 HPUs
-/itf-fi-ml/home/constb/.conda/envs/lfdeep/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py:1767: PossibleUserWarning: GPU available but not used. Set `accelerator` and `devices` using `Trainer(accelerator='gpu', devices=8)`.
-  category=PossibleUserWarning,
-hi
-
-   | Name                    | Type              | Params
----------------------------------------------------------------
-0  | expert_kernels          | ModuleList        | 251 K 
-1  | towers_list             | ModuleList        | 2.6 M 
-2  | output_list             | ModuleList        | 3.8 K 
-3  | loss_fn                 | MSELoss           | 0     
-4  | loss_fn_spikes          | BCEWithLogitsLoss | 0     
-5  | training_metric         | MeanSquaredError  | 0     
-6  | training_metric_spike   | Accuracy          | 0     
-7  | validation_metric       | MeanSquaredError  | 0     
-8  | validation_metric_spike | Accuracy          | 0     
-9  | test_metric             | MeanSquaredError  | 0     
-10 | test_metric_spike       | Accuracy          | 0     
----------------------------------------------------------------
-166 M     Trainable params
-0         Non-trainable params
-166 M     Total params
-666.663   Total estimated model params size (MB)
-/itf-fi-ml/home/constb/.conda/envs/lfdeep/lib/python3.7/site-packages/pytorch_lightning/loggers/tensorboard.py:251: UserWarning: Could not log computational graph since the `model.example_input_array` attribute is not set or `input_array` was not given
-  "Could not log computational graph since the"
-Sanity Checking: 0it [00:00, ?it/s]Sanity Checking:   0%|          | 0/2 [00:00<?, ?it/s]Sanity Checking DataLoader 0:   0%|          | 0/2 [00:00<?, ?it/s]hi
-/itf-fi-ml/home/constb/.conda/envs/lfdeep/lib/python3.7/site-packages/torch/nn/functional.py:1967: UserWarning: nn.functional.sigmoid is deprecated. Use torch.sigmoid instead.
-  warnings.warn("nn.functional.sigmoid is deprecated. Use torch.sigmoid instead.")
-Sanity Checking DataLoader 0:  50%|█████     | 1/2 [00:01<00:01,  1.27s/it]hi
-Sanity Checking DataLoader 0: 100%|██████████| 2/2 [00:01<00:00,  1.12it/s]                                                                           Training: 0it [00:00, ?it/s]Training:   0%|          | 0/12563 [00:00<?, ?it/s]Epoch 0:   0%|          | 0/12563 [00:00<?, ?it/s] hi
-Epoch 0:   0%|          | 1/12563 [00:36<127:00:00, 36.40s/it]Epoch 0:   0%|          | 1/12563 [00:36<127:00:54, 36.40s/it, loss=4.3e+03, v_num=]hi
-Epoch 0:   0%|          | 2/12563 [01:11<125:28:41, 35.96s/it, loss=4.3e+03, v_num=]Epoch 0:   0%|          | 2/12563 [01:11<125:29:16, 35.97s/it, loss=4.42e+03, v_num=]hi
-Epoch 0:   0%|          | 3/12563 [01:45<122:52:21, 35.22s/it, loss=4.42e+03, v_num=]Epoch 0:   0%|          | 3/12563 [01:45<122:52:41, 35.22s/it, loss=3.79e+03, v_num=]hi
-Epoch 0:   0%|          | 4/12563 [02:19<121:32:54, 34.84s/it, loss=3.79e+03, v_num=]Epoch 0:   0%|          | 4/12563 [02:19<121:33:38, 34.85s/it, loss=4.08e+03, v_num=]hi
-Epoch 0:   0%|          | 5/12563 [02:52<120:36:41, 34.58s/it, loss=4.08e+03, v_num=]Epoch 0:   0%|          | 5/12563 [02:52<120:36:43, 34.58s/it, loss=4.21e+03, v_num=]hi
-Epoch 0:   0%|          | 6/12563 [03:26<119:46:27, 34.34s/it, loss=4.21e+03, v_num=]Epoch 0:   0%|          | 6/12563 [03:26<119:46:35, 34.34s/it, loss=4.04e+03, v_num=]hi
-Epoch 0:   0%|          | 7/12563 [03:59<119:08:07, 34.16s/it, loss=4.04e+03, v_num=]Epoch 0:   0%|          | 7/12563 [03:59<119:08:14, 34.16s/it, loss=4.11e+03, v_num=]hi
-Epoch 0:   0%|          | 8/12563 [04:31<118:33:31, 34.00s/it, loss=4.11e+03, v_num=]Epoch 0:   0%|          | 8/12563 [04:31<118:33:37, 34.00s/it, loss=4.14e+03, v_num=]hi
-Epoch 0:   0%|          | 9/12563 [05:04<118:04:01, 33.86s/it, loss=4.14e+03, v_num=]Epoch 0:   0%|          | 9/12563 [05:04<118:04:06, 33.86s/it, loss=4.12e+03, v_num=]hi
-Epoch 0:   0%|          | 10/12563 [05:37<117:34:01, 33.72s/it, loss=4.12e+03, v_num=]Epoch 0:   0%|          | 10/12563 [05:37<117:34:14, 33.72s/it, loss=4.16e+03, v_num=]hi
-Epoch 0:   0%|          | 11/12563 [06:08<116:57:29, 33.54s/it, loss=4.16e+03, v_num=]Epoch 0:   0%|          | 11/12563 [06:08<116:57:34, 33.54s/it, loss=4.17e+03, v_num=]hi
-Epoch 0:   0%|          | 12/12563 [06:42<116:48:41, 33.51s/it, loss=4.17e+03, v_num=]Epoch 0:   0%|          | 12/12563 [06:42<116:48:52, 33.51s/it, loss=4.17e+03, v_num=]hi
-Epoch 0:   0%|          | 13/12563 [07:14<116:26:15, 33.40s/it, loss=4.17e+03, v_num=]Epoch 0:   0%|          | 13/12563 [07:14<116:26:17, 33.40s/it, loss=4.16e+03, v_num=]hi
-Epoch 0:   0%|          | 14/12563 [07:46<116:02:44, 33.29s/it, loss=4.16e+03, v_num=]Epoch 0:   0%|          | 14/12563 [07:46<116:02:53, 33.29s/it, loss=4.18e+03, v_num=]hi
-Epoch 0:   0%|          | 15/12563 [08:17<115:40:14, 33.19s/it, loss=4.18e+03, v_num=]Epoch 0:   0%|          | 15/12563 [08:17<115:40:15, 33.19s/it, loss=4.15e+03, v_num=]hi
-Epoch 0:   0%|          | 16/12563 [08:49<115:26:58, 33.12s/it, loss=4.15e+03, v_num=]Epoch 0:   0%|          | 16/12563 [08:50<115:27:01, 33.13s/it, loss=4.15e+03, v_num=]hi
-Epoch 0:   0%|          | 17/12563 [09:20<114:56:00, 32.98s/it, loss=4.15e+03, v_num=]Epoch 0:   0%|          | 17/12563 [09:20<114:56:03, 32.98s/it, loss=4.12e+03, v_num=]hi
-Epoch 0:   0%|          | 18/12563 [09:53<114:53:38, 32.97s/it, loss=4.12e+03, v_num=]Epoch 0:   0%|          | 18/12563 [09:53<114:53:43, 32.97s/it, loss=4.04e+03, v_num=]hi
-Epoch 0:   0%|          | 19/12563 [10:25<114:38:30, 32.90s/it, loss=4.04e+03, v_num=]Epoch 0:   0%|          | 19/12563 [10:25<114:38:33, 32.90s/it, loss=4.03e+03, v_num=]hi
-Epoch 0:   0%|          | 20/12563 [10:58<114:38:57, 32.91s/it, loss=4.03e+03, v_num=]Epoch 0:   0%|          | 20/12563 [10:58<114:39:00, 32.91s/it, loss=3.97e+03, v_num=]hi
-Epoch 0:   0%|          | 21/12563 [11:32<114:48:44, 32.96s/it, loss=3.97e+03, v_num=]Epoch 0:   0%|          | 21/12563 [11:32<114:48:46, 32.96s/it, loss=3.9e+03, v_num=] hi
-Epoch 0:   0%|          | 22/12563 [12:05<114:53:09, 32.98s/it, loss=3.9e+03, v_num=]Epoch 0:   0%|          | 22/12563 [12:05<114:53:10, 32.98s/it, loss=3.86e+03, v_num=]hi
-Epoch 0:   0%|          | 23/12563 [12:40<115:09:07, 33.06s/it, loss=3.86e+03, v_num=]Epoch 0:   0%|          | 23/12563 [12:40<115:09:09, 33.06s/it, loss=3.9e+03, v_num=] hi
-Epoch 0:   0%|          | 24/12563 [13:14<115:15:48, 33.09s/it, loss=3.9e+03, v_num=]Epoch 0:   0%|          | 24/12563 [13:14<115:15:49, 33.09s/it, loss=3.75e+03, v_num=]hi
-Epoch 0:   0%|          | 25/12563 [13:47<115:17:07, 33.10s/it, loss=3.75e+03, v_num=]Epoch 0:   0%|          | 25/12563 [13:47<115:17:09, 33.10s/it, loss=3.59e+03, v_num=]hi
-Epoch 0:   0%|          | 26/12563 [14:21<115:25:06, 33.14s/it, loss=3.59e+03, v_num=]Epoch 0:   0%|          | 26/12563 [14:21<115:25:08, 33.14s/it, loss=3.56e+03, v_num=]hi
-Epoch 0:   0%|          | 27/12563 [14:55<115:28:51, 33.16s/it, loss=3.56e+03, v_num=]Epoch 0:   0%|          | 27/12563 [14:55<115:28:52, 33.16s/it, loss=3.47e+03, v_num=]hi
-Epoch 0:   0%|          | 28/12563 [15:29<115:33:39, 33.19s/it, loss=3.47e+03, v_num=]Epoch 0:   0%|          | 28/12563 [15:29<115:33:41, 33.19s/it, loss=3.35e+03, v_num=]hi
-Epoch 0:   0%|          | 29/12563 [16:04<115:44:09, 33.24s/it, loss=3.35e+03, v_num=]Epoch 0:   0%|          | 29/12563 [16:04<115:44:10, 33.24s/it, loss=3.23e+03, v_num=]hi
-Epoch 0:   0%|          | 30/12563 [16:38<115:49:20, 33.27s/it, loss=3.23e+03, v_num=]Epoch 0:   0%|          | 30/12563 [16:38<115:49:22, 33.27s/it, loss=3.07e+03, v_num=]hi
-Epoch 0:   0%|          | 31/12563 [17:10<115:46:07, 33.26s/it, loss=3.07e+03, v_num=]Epoch 0:   0%|          | 31/12563 [17:10<115:46:07, 33.26s/it, loss=2.93e+03, v_num=]hi
-Epoch 0:   0%|          | 32/12563 [17:44<115:49:42, 33.28s/it, loss=2.93e+03, v_num=]Epoch 0:   0%|          | 32/12563 [17:44<115:49:44, 33.28s/it, loss=2.77e+03, v_num=]hi
-Epoch 0:   0%|          | 33/12563 [18:17<115:45:42, 33.26s/it, loss=2.77e+03, v_num=]Epoch 0:   0%|          | 33/12563 [18:17<115:45:42, 33.26s/it, loss=2.62e+03, v_num=]hi
-Epoch 0:   0%|          | 34/12563 [18:52<115:53:28, 33.30s/it, loss=2.62e+03, v_num=]Epoch 0:   0%|          | 34/12563 [18:52<115:53:29, 33.30s/it, loss=2.43e+03, v_num=]hi
-Epoch 0:   0%|          | 35/12563 [19:25<115:54:15, 33.31s/it, loss=2.43e+03, v_num=]Epoch 0:   0%|          | 35/12563 [19:25<115:54:16, 33.31s/it, loss=2.3e+03, v_num=] hi
-Epoch 0:   0%|          | 36/12563 [19:57<115:46:59, 33.27s/it, loss=2.3e+03, v_num=]Epoch 0:   0%|          | 36/12563 [19:57<115:47:01, 33.27s/it, loss=2.12e+03, v_num=]hi
-Epoch 0:   0%|          | 37/12563 [20:32<115:55:59, 33.32s/it, loss=2.12e+03, v_num=]Epoch 0:   0%|          | 37/12563 [20:32<115:56:00, 33.32s/it, loss=1.98e+03, v_num=]hi
-Epoch 0:   0%|          | 38/12563 [21:08<116:06:20, 33.37s/it, loss=1.98e+03, v_num=]Epoch 0:   0%|          | 38/12563 [21:08<116:06:21, 33.37s/it, loss=1.86e+03, v_num=]hi
-Epoch 0:   0%|          | 39/12563 [21:42<116:08:45, 33.39s/it, loss=1.86e+03, v_num=]Epoch 0:   0%|          | 39/12563 [21:42<116:08:47, 33.39s/it, loss=1.77e+03, v_num=]hi
-Epoch 0:   0%|          | 40/12563 [22:14<116:02:08, 33.36s/it, loss=1.77e+03, v_num=]Epoch 0:   0%|          | 40/12563 [22:14<116:02:09, 33.36s/it, loss=1.66e+03, v_num=]hi
-Epoch 0:   0%|          | 41/12563 [22:47<116:01:15, 33.36s/it, loss=1.66e+03, v_num=]Epoch 0:   0%|          | 41/12563 [22:47<116:01:16, 33.36s/it, loss=1.62e+03, v_num=]hi
-Epoch 0:   0%|          | 42/12563 [23:20<116:00:05, 33.35s/it, loss=1.62e+03, v_num=]Epoch 0:   0%|          | 42/12563 [23:20<116:00:06, 33.35s/it, loss=1.47e+03, v_num=]hi
-Epoch 0:   0%|          | 43/12563 [23:54<116:00:32, 33.36s/it, loss=1.47e+03, v_num=]Epoch 0:   0%|          | 43/12563 [23:54<116:00:33, 33.36s/it, loss=1.32e+03, v_num=]hi
-Epoch 0:   0%|          | 44/12563 [24:27<115:58:45, 33.35s/it, loss=1.32e+03, v_num=]Epoch 0:   0%|          | 44/12563 [24:27<115:58:46, 33.35s/it, loss=1.26e+03, v_num=]hi
-Epoch 0:   0%|          | 45/12563 [24:59<115:54:18, 33.33s/it, loss=1.26e+03, v_num=]Epoch 0:   0%|          | 45/12563 [24:59<115:54:21, 33.33s/it, loss=1.21e+03, v_num=]hi
-Epoch 0:   0%|          | 46/12563 [25:32<115:49:17, 33.31s/it, loss=1.21e+03, v_num=]Epoch 0:   0%|          | 46/12563 [25:32<115:49:18, 33.31s/it, loss=1.1e+03, v_num=] hi
-Epoch 0:   0%|          | 47/12563 [26:04<115:45:11, 33.29s/it, loss=1.1e+03, v_num=]Epoch 0:   0%|          | 47/12563 [26:04<115:45:12, 33.29s/it, loss=984, v_num=]    hi
-Epoch 0:   0%|          | 48/12563 [26:37<115:41:50, 33.28s/it, loss=984, v_num=]Epoch 0:   0%|          | 48/12563 [26:37<115:41:51, 33.28s/it, loss=914, v_num=]hi
-Epoch 0:   0%|          | 49/12563 [27:09<115:37:37, 33.26s/it, loss=914, v_num=]Epoch 0:   0%|          | 49/12563 [27:09<115:37:37, 33.26s/it, loss=839, v_num=]hi
-Epoch 0:   0%|          | 50/12563 [27:42<115:33:14, 33.25s/it, loss=839, v_num=]Epoch 0:   0%|          | 50/12563 [27:42<115:33:15, 33.25s/it, loss=798, v_num=]hi
-Epoch 0:   0%|          | 51/12563 [28:14<115:30:03, 33.23s/it, loss=798, v_num=]Epoch 0:   0%|          | 51/12563 [28:14<115:30:03, 33.23s/it, loss=752, v_num=]hi
-Epoch 0:   0%|          | 52/12563 [28:46<115:23:57, 33.21s/it, loss=752, v_num=]Epoch 0:   0%|          | 52/12563 [28:46<115:23:58, 33.21s/it, loss=726, v_num=]hi
-Epoch 0:   0%|          | 53/12563 [29:18<115:18:01, 33.18s/it, loss=726, v_num=]Epoch 0:   0%|          | 53/12563 [29:18<115:18:02, 33.18s/it, loss=682, v_num=]hi
-Epoch 0:   0%|          | 54/12563 [29:50<115:12:06, 33.15s/it, loss=682, v_num=]Epoch 0:   0%|          | 54/12563 [29:50<115:12:06, 33.15s/it, loss=669, v_num=]hi
-Epoch 0:   0%|          | 55/12563 [30:22<115:06:44, 33.13s/it, loss=669, v_num=]Epoch 0:   0%|          | 55/12563 [30:22<115:06:46, 33.13s/it, loss=651, v_num=]hi
-Epoch 0:   0%|          | 56/12563 [30:54<115:02:52, 33.12s/it, loss=651, v_num=]Epoch 0:   0%|          | 56/12563 [30:54<115:02:53, 33.12s/it, loss=672, v_num=]hi
-Epoch 0:   0%|          | 57/12563 [31:27<115:03:18, 33.12s/it, loss=672, v_num=]Epoch 0:   0%|          | 57/12563 [31:27<115:03:19, 33.12s/it, loss=652, v_num=]hi
-Epoch 0:   0%|          | 58/12563 [32:00<114:59:38, 33.11s/it, loss=652, v_num=]Epoch 0:   0%|          | 58/12563 [32:00<114:59:39, 33.11s/it, loss=663, v_num=]hi
-Epoch 0:   0%|          | 59/12563 [32:33<114:59:15, 33.11s/it, loss=663, v_num=]Epoch 0:   0%|          | 59/12563 [32:33<114:59:16, 33.11s/it, loss=585, v_num=]hi
-Epoch 0:   0%|          | 60/12563 [33:06<114:57:58, 33.10s/it, loss=585, v_num=]Epoch 0:   0%|          | 60/12563 [33:06<114:57:58, 33.10s/it, loss=599, v_num=]hi
-Epoch 0:   0%|          | 61/12563 [33:38<114:55:10, 33.09s/it, loss=599, v_num=]Epoch 0:   0%|          | 61/12563 [33:38<114:55:10, 33.09s/it, loss=521, v_num=]hi
-Epoch 0:   0%|          | 62/12563 [34:11<114:52:24, 33.08s/it, loss=521, v_num=]Epoch 0:   0%|          | 62/12563 [34:11<114:52:24, 33.08s/it, loss=491, v_num=]hi
-Epoch 0:   1%|          | 63/12563 [34:41<114:43:39, 33.04s/it, loss=491, v_num=]Epoch 0:   1%|          | 63/12563 [34:41<114:43:39, 33.04s/it, loss=495, v_num=]hi
-Epoch 0:   1%|          | 64/12563 [35:11<114:33:50, 33.00s/it, loss=495, v_num=]Epoch 0:   1%|          | 64/12563 [35:11<114:33:50, 33.00s/it, loss=484, v_num=]hi
-Epoch 0:   1%|          | 65/12563 [35:42<114:26:49, 32.97s/it, loss=484, v_num=]Epoch 0:   1%|          | 65/12563 [35:42<114:26:50, 32.97s/it, loss=469, v_num=]hi
-Epoch 0:   1%|          | 66/12563 [36:14<114:21:06, 32.94s/it, loss=469, v_num=]Epoch 0:   1%|          | 66/12563 [36:14<114:21:07, 32.94s/it, loss=459, v_num=]hi
-Epoch 0:   1%|          | 67/12563 [36:47<114:21:37, 32.95s/it, loss=459, v_num=]Epoch 0:   1%|          | 67/12563 [36:47<114:21:37, 32.95s/it, loss=465, v_num=]hi
-Epoch 0:   1%|          | 68/12563 [37:21<114:26:06, 32.97s/it, loss=465, v_num=]Epoch 0:   1%|          | 68/12563 [37:21<114:26:07, 32.97s/it, loss=447, v_num=]hi
-Epoch 0:   1%|          | 69/12563 [37:53<114:21:09, 32.95s/it, loss=447, v_num=]Epoch 0:   1%|          | 69/12563 [37:53<114:21:09, 32.95s/it, loss=455, v_num=]hi
-Epoch 0:   1%|          | 70/12563 [38:25<114:16:21, 32.93s/it, loss=455, v_num=]Epoch 0:   1%|          | 70/12563 [38:25<114:16:21, 32.93s/it, loss=441, v_num=]hi
-Epoch 0:   1%|          | 71/12563 [38:56<114:12:52, 32.91s/it, loss=441, v_num=]Epoch 0:   1%|          | 71/12563 [38:56<114:12:53, 32.91s/it, loss=481, v_num=]hi
-Epoch 0:   1%|          | 72/12563 [39:28<114:07:12, 32.89s/it, loss=481, v_num=]Epoch 0:   1%|          | 72/12563 [39:28<114:07:12, 32.89s/it, loss=473, v_num=]hi
-Epoch 0:   1%|          | 73/12563 [40:01<114:07:36, 32.89s/it, loss=473, v_num=]Epoch 0:   1%|          | 73/12563 [40:01<114:07:36, 32.89s/it, loss=463, v_num=]hi
-Epoch 0:   1%|          | 74/12563 [40:35<114:10:34, 32.91s/it, loss=463, v_num=]Epoch 0:   1%|          | 74/12563 [40:35<114:10:34, 32.91s/it, loss=463, v_num=]hi
-Epoch 0:   1%|          | 75/12563 [41:09<114:14:01, 32.93s/it, loss=463, v_num=]Epoch 0:   1%|          | 75/12563 [41:09<114:14:02, 32.93s/it, loss=450, v_num=]hi
-Epoch 0:   1%|          | 76/12563 [41:44<114:19:31, 32.96s/it, loss=450, v_num=]Epoch 0:   1%|          | 76/12563 [41:44<114:19:31, 32.96s/it, loss=405, v_num=]hi
-Epoch 0:   1%|          | 77/12563 [42:19<114:21:59, 32.97s/it, loss=405, v_num=]Epoch 0:   1%|          | 77/12563 [42:19<114:21:59, 32.97s/it, loss=386, v_num=]hi
-Epoch 0:   1%|          | 78/12563 [42:53<114:24:16, 32.99s/it, loss=386, v_num=]Epoch 0:   1%|          | 78/12563 [42:53<114:24:17, 32.99s/it, loss=359, v_num=]hi
-Epoch 0:   1%|          | 79/12563 [43:26<114:25:28, 33.00s/it, loss=359, v_num=]Epoch 0:   1%|          | 79/12563 [43:26<114:25:28, 33.00s/it, loss=353, v_num=]hi
-Epoch 0:   1%|          | 80/12563 [44:02<114:31:11, 33.03s/it, loss=353, v_num=]Epoch 0:   1%|          | 80/12563 [44:02<114:31:11, 33.03s/it, loss=331, v_num=]hi
-Epoch 0:   1%|          | 81/12563 [44:35<114:32:47, 33.04s/it, loss=331, v_num=]Epoch 0:   1%|          | 81/12563 [44:35<114:32:48, 33.04s/it, loss=338, v_num=]hi
-Epoch 0:   1%|          | 82/12563 [45:09<114:32:41, 33.04s/it, loss=338, v_num=]Epoch 0:   1%|          | 82/12563 [45:09<114:32:41, 33.04s/it, loss=386, v_num=]hi
-Epoch 0:   1%|          | 83/12563 [45:45<114:39:53, 33.08s/it, loss=386, v_num=]Epoch 0:   1%|          | 83/12563 [45:45<114:39:53, 33.08s/it, loss=368, v_num=]hi
-Epoch 0:   1%|          | 84/12563 [46:20<114:43:24, 33.10s/it, loss=368, v_num=]Epoch 0:   1%|          | 84/12563 [46:20<114:43:25, 33.10s/it, loss=354, v_num=]hi
-Epoch 0:   1%|          | 85/12563 [46:52<114:41:03, 33.09s/it, loss=354, v_num=]Epoch 0:   1%|          | 85/12563 [46:52<114:41:03, 33.09s/it, loss=343, v_num=]hi
-Epoch 0:   1%|          | 86/12563 [47:25<114:41:26, 33.09s/it, loss=343, v_num=]Epoch 0:   1%|          | 86/12563 [47:25<114:41:27, 33.09s/it, loss=341, v_num=]hi
-Epoch 0:   1%|          | 87/12563 [48:00<114:44:16, 33.11s/it, loss=341, v_num=]Epoch 0:   1%|          | 87/12563 [48:00<114:44:16, 33.11s/it, loss=323, v_num=]hi
-Epoch 0:   1%|          | 88/12563 [48:34<114:45:13, 33.12s/it, loss=323, v_num=]Epoch 0:   1%|          | 88/12563 [48:34<114:45:13, 33.12s/it, loss=332, v_num=]hi
-Epoch 0:   1%|          | 89/12563 [49:08<114:48:24, 33.13s/it, loss=332, v_num=]Epoch 0:   1%|          | 89/12563 [49:08<114:48:24, 33.13s/it, loss=321, v_num=]hi
-Epoch 0:   1%|          | 90/12563 [49:44<114:53:34, 33.16s/it, loss=321, v_num=]Epoch 0:   1%|          | 90/12563 [49:44<114:53:34, 33.16s/it, loss=321, v_num=]hi
-Epoch 0:   1%|          | 91/12563 [50:18<114:55:29, 33.17s/it, loss=321, v_num=]Epoch 0:   1%|          | 91/12563 [50:18<114:55:30, 33.17s/it, loss=270, v_num=]hi
-Epoch 0:   1%|          | 92/12563 [50:53<114:57:50, 33.19s/it, loss=270, v_num=]Epoch 0:   1%|          | 92/12563 [50:53<114:57:51, 33.19s/it, loss=269, v_num=]hi
-Epoch 0:   1%|          | 93/12563 [51:28<115:02:05, 33.21s/it, loss=269, v_num=]Epoch 0:   1%|          | 93/12563 [51:28<115:02:06, 33.21s/it, loss=268, v_num=]hi
-Epoch 0:   1%|          | 94/12563 [52:01<115:00:21, 33.20s/it, loss=268, v_num=]Epoch 0:   1%|          | 94/12563 [52:01<115:00:21, 33.20s/it, loss=251, v_num=]hi
-Epoch 0:   1%|          | 95/12563 [52:35<115:01:22, 33.21s/it, loss=251, v_num=]Epoch 0:   1%|          | 95/12563 [52:35<115:01:23, 33.21s/it, loss=245, v_num=]hi
-Epoch 0:   1%|          | 96/12563 [53:08<115:01:45, 33.22s/it, loss=245, v_num=]Epoch 0:   1%|          | 96/12563 [53:08<115:01:46, 33.22s/it, loss=250, v_num=]hi
-Epoch 0:   1%|          | 97/12563 [53:42<115:01:39, 33.22s/it, loss=250, v_num=]Epoch 0:   1%|          | 97/12563 [53:42<115:01:40, 33.22s/it, loss=289, v_num=]hi
-Epoch 0:   1%|          | 98/12563 [54:15<115:01:43, 33.22s/it, loss=289, v_num=]Epoch 0:   1%|          | 98/12563 [54:15<115:01:46, 33.22s/it, loss=297, v_num=]hi
-Epoch 0:   1%|          | 99/12563 [54:48<115:00:14, 33.22s/it, loss=297, v_num=]Epoch 0:   1%|          | 99/12563 [54:48<115:00:15, 33.22s/it, loss=284, v_num=]hi
-Epoch 0:   1%|          | 100/12563 [55:20<114:57:11, 33.20s/it, loss=284, v_num=]Epoch 0:   1%|          | 100/12563 [55:20<114:57:11, 33.20s/it, loss=278, v_num=]hi
-Epoch 0:   1%|          | 101/12563 [55:51<114:51:55, 33.18s/it, loss=278, v_num=]Epoch 0:   1%|          | 101/12563 [55:51<114:51:56, 33.18s/it, loss=263, v_num=]hi
-Epoch 0:   1%|          | 102/12563 [56:24<114:51:59, 33.19s/it, loss=263, v_num=]Epoch 0:   1%|          | 102/12563 [56:24<114:51:59, 33.19s/it, loss=261, v_num=]hi
-Epoch 0:   1%|          | 103/12563 [56:58<114:51:51, 33.19s/it, loss=261, v_num=]Epoch 0:   1%|          | 103/12563 [56:58<114:51:51, 33.19s/it, loss=287, v_num=]hi
-Epoch 0:   1%|          | 104/12563 [57:30<114:49:43, 33.18s/it, loss=287, v_num=]Epoch 0:   1%|          | 104/12563 [57:30<114:49:43, 33.18s/it, loss=290, v_num=]hi
-Epoch 0:   1%|          | 105/12563 [58:03<114:47:46, 33.17s/it, loss=290, v_num=]Epoch 0:   1%|          | 105/12563 [58:03<114:47:47, 33.17s/it, loss=315, v_num=]hi
-Epoch 0:   1%|          | 106/12563 [58:35<114:44:57, 33.16s/it, loss=315, v_num=]Epoch 0:   1%|          | 106/12563 [58:35<114:44:57, 33.16s/it, loss=340, v_num=]hi
-Epoch 0:   1%|          | 107/12563 [59:08<114:44:20, 33.16s/it, loss=340, v_num=]Epoch 0:   1%|          | 107/12563 [59:08<114:44:20, 33.16s/it, loss=358, v_num=]hi
-Epoch 0:   1%|          | 108/12563 [59:41<114:43:44, 33.16s/it, loss=358, v_num=]Epoch 0:   1%|          | 108/12563 [59:41<114:43:44, 33.16s/it, loss=348, v_num=]hi
-Epoch 0:   1%|          | 109/12563 [1:00:13<114:41:10, 33.15s/it, loss=348, v_num=]Epoch 0:   1%|          | 109/12563 [1:00:13<114:41:11, 33.15s/it, loss=354, v_num=]hi
-Epoch 0:   1%|          | 110/12563 [1:00:46<114:40:29, 33.15s/it, loss=354, v_num=]Epoch 0:   1%|          | 110/12563 [1:00:46<114:40:30, 33.15s/it, loss=367, v_num=]hi
-Epoch 0:   1%|          | 111/12563 [1:01:18<114:38:13, 33.14s/it, loss=367, v_num=]Epoch 0:   1%|          | 111/12563 [1:01:18<114:38:13, 33.14s/it, loss=357, v_num=]hi
-Epoch 0:   1%|          | 112/12563 [1:01:51<114:37:00, 33.14s/it, loss=357, v_num=]Epoch 0:   1%|          | 112/12563 [1:01:51<114:37:00, 33.14s/it, loss=346, v_num=]hi
-main.py:9: UserWarning: 
-The version_base parameter is not specified.
-Please specify a compatability version level, or None.
-Will assume defaults for version 1.1
-  @hydra.main(config_path="configs", config_name="defaults")
-/itf-fi-ml/home/constb/.conda/envs/lfdeep/lib/python3.7/site-packages/hydra/_internal/defaults_list.py:251: UserWarning: In 'defaults': Defaults list is missing `_self_`. See https://hydra.cc/docs/upgrades/1.0_to_1.1/default_composition_order for more information
-  warnings.warn(msg, UserWarning)
-/itf-fi-ml/home/constb/.conda/envs/lfdeep/lib/python3.7/site-packages/hydra/_internal/hydra.py:127: UserWarning: Future Hydra versions will no longer change working directory at job runtime by default.
-See https://hydra.cc/docs/next/upgrades/1.1_to_1.2/changes_to_job_working_dir/ for more information.
-  configure_logging=with_log_configuration,
-Global seed set to 2509
-[[36m2022-12-06 15:52:24,550[0m][[34m__main__[0m][[32mINFO[0m] - 
-data:
-  _target_: project.data.spike.SpikeDataModule
-  config:
-    sequence_len: 100
-    in_path: /scratch/users/constb/Data/input_data_new.npy
-    target_path: /scratch/users/constb/Data/output_data_new.npy
-    batch_size: 32
-    num_workers: 32
-model:
-  _target_: project.model.mixture_of_experts.MMoE
-  config:
-    num_tasks: 641
-    num_experts: 5
-    num_layers: 1
-    num_units: 20
-    sequence_len: 100
-    num_features: 1278
-    use_expert_bias: true
-    use_gate_bias: true
-    expert: configs/model/tcn.yaml
-    optimizer: configs/optim/adam.yaml
-trainer:
-  benchmark: true
-  max_epochs: 100
-  log_every_n_steps: 1
-[0m
-GPU available: True (cuda), used: False
-TPU available: False, using: 0 TPU cores
-IPU available: False, using: 0 IPUs
-HPU available: False, using: 0 HPUs
-/itf-fi-ml/home/constb/.conda/envs/lfdeep/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py:1767: PossibleUserWarning: GPU available but not used. Set `accelerator` and `devices` using `Trainer(accelerator='gpu', devices=8)`.
-  category=PossibleUserWarning,
-hi
-
-   | Name                    | Type              | Params
----------------------------------------------------------------
-0  | expert_kernels          | ModuleList        | 11.6 M
-1  | towers_list             | ModuleList        | 10.3 M
-2  | output_list             | ModuleList        | 13.5 K
-3  | loss_fn                 | MSELoss           | 0     
-4  | loss_fn_spikes          | BCEWithLogitsLoss | 0     
-5  | training_metric         | MeanSquaredError  | 0     
-6  | training_metric_spike   | Accuracy          | 0     
-7  | validation_metric       | MeanSquaredError  | 0     
-8  | validation_metric_spike | Accuracy          | 0     
-9  | test_metric             | MeanSquaredError  | 0     
-10 | test_metric_spike       | Accuracy          | 0     
----------------------------------------------------------------
-431 M     Trainable params
-0         Non-trainable params
-431 M     Total params
-1,726.003 Total estimated model params size (MB)
-/itf-fi-ml/home/constb/.conda/envs/lfdeep/lib/python3.7/site-packages/pytorch_lightning/loggers/tensorboard.py:251: UserWarning: Could not log computational graph since the `model.example_input_array` attribute is not set or `input_array` was not given
-  "Could not log computational graph since the"
-Sanity Checking: 0it [00:00, ?it/s]Sanity Checking:   0%|          | 0/2 [00:00<?, ?it/s]Sanity Checking DataLoader 0:   0%|          | 0/2 [00:00<?, ?it/s]hi
-/itf-fi-ml/home/constb/.conda/envs/lfdeep/lib/python3.7/site-packages/torch/nn/functional.py:1967: UserWarning: nn.functional.sigmoid is deprecated. Use torch.sigmoid instead.
-  warnings.warn("nn.functional.sigmoid is deprecated. Use torch.sigmoid instead.")
-Sanity Checking DataLoader 0:  50%|█████     | 1/2 [00:05<00:05,  5.18s/it]hi
-Sanity Checking DataLoader 0: 100%|██████████| 2/2 [00:09<00:00,  4.62s/it]                                                                           Training: 0it [00:00, ?it/s]Training:   0%|          | 0/786 [00:00<?, ?it/s]Epoch 0:   0%|          | 0/786 [00:00<?, ?it/s] hi
-Epoch 0:   0%|          | 1/786 [02:52<37:42:23, 172.92s/it]Epoch 0:   0%|          | 1/786 [02:52<37:42:25, 172.92s/it, loss=3.85e+03, v_num=]hi
-Epoch 0:   0%|          | 2/786 [07:38<49:52:37, 229.03s/it, loss=3.85e+03, v_num=]Epoch 0:   0%|          | 2/786 [07:38<49:52:42, 229.03s/it, loss=3.93e+03, v_num=]hi
-Epoch 0:   0%|          | 3/786 [12:48<55:42:29, 256.13s/it, loss=3.93e+03, v_num=]Epoch 0:   0%|          | 3/786 [12:48<55:42:29, 256.13s/it, loss=3.9e+03, v_num=] hi
-Epoch 0:   1%|          | 4/786 [19:51<64:40:56, 297.77s/it, loss=3.9e+03, v_num=]Epoch 0:   1%|          | 4/786 [19:51<64:40:59, 297.77s/it, loss=3.85e+03, v_num=]hi
-Epoch 0:   1%|          | 5/786 [24:24<63:33:01, 292.93s/it, loss=3.85e+03, v_num=]Epoch 0:   1%|          | 5/786 [24:24<63:33:01, 292.93s/it, loss=3.78e+03, v_num=]hi
-Epoch 0:   1%|          | 6/786 [31:03<67:17:11, 310.55s/it, loss=3.78e+03, v_num=]Epoch 0:   1%|          | 6/786 [31:03<67:17:11, 310.55s/it, loss=3.74e+03, v_num=]hi
-Epoch 0:   1%|          | 7/786 [39:01<72:23:28, 334.54s/it, loss=3.74e+03, v_num=]Epoch 0:   1%|          | 7/786 [39:01<72:23:29, 334.54s/it, loss=3.62e+03, v_num=]hi
-Epoch 0:   1%|          | 8/786 [43:54<71:10:46, 329.37s/it, loss=3.62e+03, v_num=]Epoch 0:   1%|          | 8/786 [43:54<71:10:46, 329.37s/it, loss=3.51e+03, v_num=]hi
-Epoch 0:   1%|          | 9/786 [49:55<71:50:28, 332.86s/it, loss=3.51e+03, v_num=]Epoch 0:   1%|          | 9/786 [49:55<71:50:29, 332.86s/it, loss=3.33e+03, v_num=]hi
-Epoch 0:   1%|▏         | 10/786 [56:22<72:54:57, 338.27s/it, loss=3.33e+03, v_num=]Epoch 0:   1%|▏         | 10/786 [56:22<72:54:58, 338.27s/it, loss=3.16e+03, v_num=]hi
-Epoch 0:   1%|▏         | 11/786 [1:02:39<73:34:51, 341.80s/it, loss=3.16e+03, v_num=]Epoch 0:   1%|▏         | 11/786 [1:02:39<73:34:51, 341.80s/it, loss=3.01e+03, v_num=]hi
-Epoch 0:   2%|▏         | 12/786 [1:07:56<73:01:49, 339.68s/it, loss=3.01e+03, v_num=]Epoch 0:   2%|▏         | 12/786 [1:07:56<73:01:54, 339.68s/it, loss=2.84e+03, v_num=]hi
-Epoch 0:   2%|▏         | 13/786 [1:14:27<73:47:34, 343.67s/it, loss=2.84e+03, v_num=]Epoch 0:   2%|▏         | 13/786 [1:14:27<73:47:35, 343.67s/it, loss=2.68e+03, v_num=]hi
-Epoch 0:   2%|▏         | 14/786 [1:19:27<73:01:38, 340.54s/it, loss=2.68e+03, v_num=]Epoch 0:   2%|▏         | 14/786 [1:19:27<73:01:38, 340.54s/it, loss=2.53e+03, v_num=]hi
-Epoch 0:   2%|▏         | 15/786 [1:25:45<73:28:08, 343.05s/it, loss=2.53e+03, v_num=]Epoch 0:   2%|▏         | 15/786 [1:25:45<73:28:08, 343.05s/it, loss=2.42e+03, v_num=]hi
-Epoch 0:   2%|▏         | 16/786 [1:32:13<73:58:38, 345.87s/it, loss=2.42e+03, v_num=]Epoch 0:   2%|▏         | 16/786 [1:32:13<73:58:38, 345.87s/it, loss=2.32e+03, v_num=]hi
-Epoch 0:   2%|▏         | 17/786 [1:40:50<76:01:17, 355.89s/it, loss=2.32e+03, v_num=]Epoch 0:   2%|▏         | 17/786 [1:40:50<76:01:17, 355.89s/it, loss=2.24e+03, v_num=]hi
-Epoch 0:   2%|▏         | 18/786 [1:45:42<75:10:27, 352.38s/it, loss=2.24e+03, v_num=]Epoch 0:   2%|▏         | 18/786 [1:45:42<75:10:27, 352.38s/it, loss=2.17e+03, v_num=]hi
-Epoch 0:   2%|▏         | 19/786 [1:52:19<75:34:22, 354.71s/it, loss=2.17e+03, v_num=]Epoch 0:   2%|▏         | 19/786 [1:52:19<75:34:23, 354.71s/it, loss=2.1e+03, v_num=] hi
-Epoch 0:   3%|▎         | 20/786 [1:59:06<76:01:35, 357.30s/it, loss=2.1e+03, v_num=]Epoch 0:   3%|▎         | 20/786 [1:59:06<76:01:35, 357.31s/it, loss=2.04e+03, v_num=]hi
-Epoch 0:   3%|▎         | 21/786 [2:06:39<76:53:51, 361.87s/it, loss=2.04e+03, v_num=]Epoch 0:   3%|▎         | 21/786 [2:06:39<76:53:52, 361.87s/it, loss=1.87e+03, v_num=]hi
-Epoch 0:   3%|▎         | 22/786 [2:11:20<76:00:52, 358.18s/it, loss=1.87e+03, v_num=]Epoch 0:   3%|▎         | 22/786 [2:11:20<76:00:52, 358.18s/it, loss=1.69e+03, v_num=]hi
-Epoch 0:   3%|▎         | 23/786 [2:18:00<76:18:21, 360.03s/it, loss=1.69e+03, v_num=]Epoch 0:   3%|▎         | 23/786 [2:18:00<76:18:21, 360.03s/it, loss=1.53e+03, v_num=]hi
-Epoch 0:   3%|▎         | 24/786 [2:22:09<75:13:25, 355.39s/it, loss=1.53e+03, v_num=]Epoch 0:   3%|▎         | 24/786 [2:22:09<75:13:25, 355.39s/it, loss=1.37e+03, v_num=]hi
-Epoch 0:   3%|▎         | 25/786 [2:27:57<75:03:49, 355.10s/it, loss=1.37e+03, v_num=]Epoch 0:   3%|▎         | 25/786 [2:27:57<75:03:49, 355.10s/it, loss=1.22e+03, v_num=]hi
-Epoch 0:   3%|▎         | 26/786 [2:33:20<74:42:23, 353.87s/it, loss=1.22e+03, v_num=]Epoch 0:   3%|▎         | 26/786 [2:33:20<74:42:24, 353.87s/it, loss=1.07e+03, v_num=]hi
-Epoch 0:   3%|▎         | 27/786 [2:40:09<75:02:12, 355.91s/it, loss=1.07e+03, v_num=]Epoch 0:   3%|▎         | 27/786 [2:40:09<75:02:12, 355.91s/it, loss=946, v_num=]     hi
-Epoch 0:   4%|▎         | 28/786 [2:44:43<74:19:12, 352.97s/it, loss=946, v_num=]Epoch 0:   4%|▎         | 28/786 [2:44:43<74:19:13, 352.97s/it, loss=826, v_num=]hi
-Epoch 0:   4%|▎         | 29/786 [2:51:40<74:41:30, 355.21s/it, loss=826, v_num=]Epoch 0:   4%|▎         | 29/786 [2:51:40<74:41:30, 355.21s/it, loss=755, v_num=]hi
-Epoch 0:   4%|▍         | 30/786 [2:56:06<73:57:46, 352.20s/it, loss=755, v_num=]Epoch 0:   4%|▍         | 30/786 [2:56:06<73:57:46, 352.20s/it, loss=694, v_num=]hi
-Epoch 0:   4%|▍         | 31/786 [3:02:31<74:05:24, 353.28s/it, loss=694, v_num=]Epoch 0:   4%|▍         | 31/786 [3:02:31<74:05:24, 353.28s/it, loss=644, v_num=]hi
-Epoch 0:   4%|▍         | 32/786 [3:09:00<74:13:26, 354.39s/it, loss=644, v_num=]Epoch 0:   4%|▍         | 32/786 [3:09:00<74:13:26, 354.39s/it, loss=617, v_num=]hi
-Epoch 0:   4%|▍         | 33/786 [3:15:39<74:24:37, 355.75s/it, loss=617, v_num=]Epoch 0:   4%|▍         | 33/786 [3:15:39<74:24:37, 355.75s/it, loss=604, v_num=]hi
-Epoch 0:   4%|▍         | 34/786 [3:21:26<74:15:33, 355.50s/it, loss=604, v_num=]Epoch 0:   4%|▍         | 34/786 [3:21:26<74:15:33, 355.50s/it, loss=596, v_num=]hi
-Epoch 0:   4%|▍         | 35/786 [3:26:28<73:50:23, 353.96s/it, loss=596, v_num=]Epoch 0:   4%|▍         | 35/786 [3:26:28<73:50:23, 353.96s/it, loss=584, v_num=]hi
-Epoch 0:   5%|▍         | 36/786 [3:31:30<73:26:24, 352.51s/it, loss=584, v_num=]Epoch 0:   5%|▍         | 36/786 [3:31:30<73:26:24, 352.51s/it, loss=557, v_num=]hi
-Epoch 0:   5%|▍         | 37/786 [3:37:55<73:31:28, 353.39s/it, loss=557, v_num=]Epoch 0:   5%|▍         | 37/786 [3:37:55<73:31:28, 353.39s/it, loss=538, v_num=]hi
-Epoch 0:   5%|▍         | 38/786 [3:43:40<73:23:01, 353.18s/it, loss=538, v_num=]Epoch 0:   5%|▍         | 38/786 [3:43:40<73:23:01, 353.18s/it, loss=515, v_num=]hi
-Epoch 0:   5%|▍         | 39/786 [3:49:58<73:24:54, 353.81s/it, loss=515, v_num=]Epoch 0:   5%|▍         | 39/786 [3:49:58<73:24:54, 353.81s/it, loss=491, v_num=]hi
-Epoch 0:   5%|▌         | 40/786 [3:56:49<73:36:38, 355.23s/it, loss=491, v_num=]Epoch 0:   5%|▌         | 40/786 [3:56:49<73:36:38, 355.23s/it, loss=476, v_num=]hi
-Epoch 0:   5%|▌         | 41/786 [4:02:08<73:19:45, 354.34s/it, loss=476, v_num=]Epoch 0:   5%|▌         | 41/786 [4:02:08<73:19:46, 354.34s/it, loss=475, v_num=]hi
-Epoch 0:   5%|▌         | 42/786 [4:06:52<72:53:21, 352.69s/it, loss=475, v_num=]Epoch 0:   5%|▌         | 42/786 [4:06:52<72:53:21, 352.69s/it, loss=479, v_num=]hi
-Epoch 0:   5%|▌         | 43/786 [4:11:51<72:31:51, 351.43s/it, loss=479, v_num=]Epoch 0:   5%|▌         | 43/786 [4:11:51<72:31:51, 351.43s/it, loss=468, v_num=]hi
-Epoch 0:   6%|▌         | 44/786 [4:17:23<72:20:31, 350.99s/it, loss=468, v_num=]Epoch 0:   6%|▌         | 44/786 [4:17:23<72:20:31, 350.99s/it, loss=455, v_num=]hi
-Epoch 0:   6%|▌         | 45/786 [4:22:32<72:03:07, 350.05s/it, loss=455, v_num=]Epoch 0:   6%|▌         | 45/786 [4:22:32<72:03:07, 350.05s/it, loss=446, v_num=]hi
-Epoch 0:   6%|▌         | 46/786 [4:27:59<71:51:10, 349.55s/it, loss=446, v_num=]Epoch 0:   6%|▌         | 46/786 [4:27:59<71:51:10, 349.55s/it, loss=453, v_num=]hi
-Epoch 0:   6%|▌         | 47/786 [4:32:37<71:26:41, 348.04s/it, loss=453, v_num=]Epoch 0:   6%|▌         | 47/786 [4:32:37<71:26:41, 348.04s/it, loss=451, v_num=]hi
-Epoch 0:   6%|▌         | 48/786 [4:37:29<71:06:24, 346.86s/it, loss=451, v_num=]Epoch 0:   6%|▌         | 48/786 [4:37:29<71:06:24, 346.86s/it, loss=459, v_num=]hi
-Epoch 0:   6%|▌         | 49/786 [4:42:58<70:56:07, 346.50s/it, loss=459, v_num=]Epoch 0:   6%|▌         | 49/786 [4:42:58<70:56:07, 346.50s/it, loss=456, v_num=]hi
-Epoch 0:   6%|▋         | 50/786 [4:48:09<70:41:35, 345.78s/it, loss=456, v_num=]Epoch 0:   6%|▋         | 50/786 [4:48:09<70:41:35, 345.78s/it, loss=453, v_num=]hi
-Epoch 0:   6%|▋         | 51/786 [4:53:02<70:23:08, 344.75s/it, loss=453, v_num=]Epoch 0:   6%|▋         | 51/786 [4:53:03<70:23:22, 344.77s/it, loss=445, v_num=]hi
-Epoch 0:   7%|▋         | 52/786 [4:57:48<70:03:41, 343.63s/it, loss=445, v_num=]Epoch 0:   7%|▋         | 52/786 [4:57:49<70:03:59, 343.65s/it, loss=453, v_num=]hi
-Epoch 0:   7%|▋         | 53/786 [5:02:35<69:44:51, 342.55s/it, loss=453, v_num=]Epoch 0:   7%|▋         | 53/786 [5:02:37<69:45:22, 342.60s/it, loss=449, v_num=]hi
-Epoch 0:   7%|▋         | 54/786 [5:06:37<69:16:23, 340.69s/it, loss=449, v_num=]Epoch 0:   7%|▋         | 54/786 [5:06:37<69:16:31, 340.70s/it, loss=441, v_num=]hi
-Epoch 0:   7%|▋         | 55/786 [5:11:51<69:04:52, 340.21s/it, loss=441, v_num=]Epoch 0:   7%|▋         | 55/786 [5:11:51<69:04:52, 340.21s/it, loss=428, v_num=]hi
-Epoch 0:   7%|▋         | 56/786 [5:17:04<68:53:18, 339.72s/it, loss=428, v_num=]Epoch 0:   7%|▋         | 56/786 [5:17:04<68:53:18, 339.72s/it, loss=427, v_num=]hi
-Epoch 0:   7%|▋         | 57/786 [5:22:04<68:39:10, 339.03s/it, loss=427, v_num=]Epoch 0:   7%|▋         | 57/786 [5:22:04<68:39:10, 339.03s/it, loss=418, v_num=]hi
-Epoch 0:   7%|▋         | 58/786 [5:25:13<68:02:09, 336.44s/it, loss=418, v_num=]Epoch 0:   7%|▋         | 58/786 [5:25:13<68:02:09, 336.44s/it, loss=413, v_num=]hi
-Epoch 0:   8%|▊         | 59/786 [5:28:01<67:22:01, 333.59s/it, loss=413, v_num=]Epoch 0:   8%|▊         | 59/786 [5:28:01<67:22:01, 333.59s/it, loss=412, v_num=]hi
-Epoch 0:   8%|▊         | 60/786 [5:30:47<66:42:30, 330.79s/it, loss=412, v_num=]Epoch 0:   8%|▊         | 60/786 [5:30:47<66:42:30, 330.79s/it, loss=416, v_num=]hi
-Epoch 0:   8%|▊         | 61/786 [5:33:34<66:04:39, 328.11s/it, loss=416, v_num=]Epoch 0:   8%|▊         | 61/786 [5:33:34<66:04:39, 328.11s/it, loss=414, v_num=]hi
-Epoch 0:   8%|▊         | 62/786 [5:36:03<65:24:18, 325.22s/it, loss=414, v_num=]Epoch 0:   8%|▊         | 62/786 [5:36:03<65:24:18, 325.22s/it, loss=406, v_num=]hi
-Epoch 0:   8%|▊         | 63/786 [5:38:54<64:49:23, 322.77s/it, loss=406, v_num=]Epoch 0:   8%|▊         | 63/786 [5:38:55<64:49:36, 322.79s/it, loss=412, v_num=]hi
-Epoch 0:   8%|▊         | 64/786 [5:41:25<64:11:38, 320.08s/it, loss=412, v_num=]Epoch 0:   8%|▊         | 64/786 [5:41:25<64:11:38, 320.08s/it, loss=413, v_num=]hi
-Epoch 0:   8%|▊         | 65/786 [5:43:59<63:35:43, 317.54s/it, loss=413, v_num=]Epoch 0:   8%|▊         | 65/786 [5:43:59<63:35:43, 317.54s/it, loss=422, v_num=]hi
-Epoch 0:   8%|▊         | 66/786 [5:46:27<62:59:30, 314.96s/it, loss=422, v_num=]Epoch 0:   8%|▊         | 66/786 [5:46:27<62:59:30, 314.96s/it, loss=409, v_num=]hi
-Epoch 0:   9%|▊         | 67/786 [5:49:04<62:25:59, 312.60s/it, loss=409, v_num=]Epoch 0:   9%|▊         | 67/786 [5:49:04<62:25:59, 312.60s/it, loss=405, v_num=]hi
-Epoch 0:   9%|▊         | 68/786 [5:51:51<61:55:08, 310.46s/it, loss=405, v_num=]Epoch 0:   9%|▊         | 68/786 [5:51:51<61:55:08, 310.46s/it, loss=399, v_num=]hi
-Epoch 0:   9%|▉         | 69/786 [5:54:20<61:22:04, 308.12s/it, loss=399, v_num=]Epoch 0:   9%|▉         | 69/786 [5:54:20<61:22:04, 308.12s/it, loss=391, v_num=]hi
-Epoch 0:   9%|▉         | 70/786 [5:56:54<60:50:38, 305.92s/it, loss=391, v_num=]Epoch 0:   9%|▉         | 70/786 [5:56:54<60:50:38, 305.92s/it, loss=386, v_num=]hi
-Epoch 0:   9%|▉         | 71/786 [5:59:30<60:20:19, 303.80s/it, loss=386, v_num=]Epoch 0:   9%|▉         | 71/786 [5:59:32<60:20:44, 303.84s/it, loss=391, v_num=]hi
-Epoch 0:   9%|▉         | 72/786 [6:02:13<59:52:02, 301.85s/it, loss=391, v_num=]Epoch 0:   9%|▉         | 72/786 [6:02:13<59:52:02, 301.85s/it, loss=383, v_num=]hi
-Epoch 0:   9%|▉         | 73/786 [6:04:51<59:23:39, 299.89s/it, loss=383, v_num=]Epoch 0:   9%|▉         | 73/786 [6:04:51<59:23:39, 299.89s/it, loss=383, v_num=]hi
-Epoch 0:   9%|▉         | 74/786 [6:07:37<58:57:07, 298.07s/it, loss=383, v_num=]Epoch 0:   9%|▉         | 74/786 [6:07:37<58:57:07, 298.07s/it, loss=383, v_num=]hi
-Epoch 0:  10%|▉         | 75/786 [6:11:24<58:40:54, 297.12s/it, loss=383, v_num=]Epoch 0:  10%|▉         | 75/786 [6:11:24<58:40:54, 297.12s/it, loss=383, v_num=]hi
-Epoch 0:  10%|▉         | 76/786 [6:14:27<58:18:11, 295.62s/it, loss=383, v_num=]Epoch 0:  10%|▉         | 76/786 [6:14:27<58:18:11, 295.62s/it, loss=384, v_num=]hi
-Epoch 0:  10%|▉         | 77/786 [6:18:25<58:04:31, 294.88s/it, loss=384, v_num=]Epoch 0:  10%|▉         | 77/786 [6:18:25<58:04:31, 294.88s/it, loss=388, v_num=]hi
-Epoch 0:  10%|▉         | 78/786 [6:21:06<57:39:12, 293.15s/it, loss=388, v_num=]Epoch 0:  10%|▉         | 78/786 [6:21:06<57:39:12, 293.15s/it, loss=386, v_num=]hi
-Epoch 0:  10%|█         | 79/786 [6:23:46<57:14:31, 291.47s/it, loss=386, v_num=]Epoch 0:  10%|█         | 79/786 [6:23:46<57:14:31, 291.47s/it, loss=386, v_num=]hi
-Epoch 0:  10%|█         | 80/786 [6:26:23<56:49:57, 289.80s/it, loss=386, v_num=]Epoch 0:  10%|█         | 80/786 [6:26:23<56:49:57, 289.80s/it, loss=373, v_num=]hi
-Epoch 0:  10%|█         | 81/786 [6:29:01<56:26:01, 288.17s/it, loss=373, v_num=]Epoch 0:  10%|█         | 81/786 [6:29:01<56:26:01, 288.17s/it, loss=367, v_num=]hi
-Epoch 0:  10%|█         | 82/786 [6:31:46<56:03:31, 286.66s/it, loss=367, v_num=]Epoch 0:  10%|█         | 82/786 [6:31:46<56:03:31, 286.66s/it, loss=366, v_num=]hi
-Epoch 0:  11%|█         | 83/786 [6:34:18<55:39:43, 285.04s/it, loss=366, v_num=]Epoch 0:  11%|█         | 83/786 [6:34:18<55:39:43, 285.04s/it, loss=356, v_num=]hi
-Epoch 0:  11%|█         | 84/786 [6:37:03<55:18:14, 283.61s/it, loss=356, v_num=]Epoch 0:  11%|█         | 84/786 [6:37:03<55:18:14, 283.61s/it, loss=362, v_num=]hi
-Epoch 0:  11%|█         | 85/786 [6:39:37<54:55:41, 282.09s/it, loss=362, v_num=]Epoch 0:  11%|█         | 85/786 [6:39:37<54:55:41, 282.09s/it, loss=359, v_num=]hi
-Epoch 0:  11%|█         | 86/786 [6:42:26<54:35:44, 280.78s/it, loss=359, v_num=]Epoch 0:  11%|█         | 86/786 [6:42:29<54:36:07, 280.81s/it, loss=359, v_num=]hi
-Epoch 0:  11%|█         | 87/786 [6:45:06<54:14:53, 279.39s/it, loss=359, v_num=]Epoch 0:  11%|█         | 87/786 [6:45:07<54:14:55, 279.39s/it, loss=354, v_num=]hi
-Epoch 0:  11%|█         | 88/786 [6:48:00<53:56:11, 278.18s/it, loss=354, v_num=]Epoch 0:  11%|█         | 88/786 [6:48:00<53:56:11, 278.18s/it, loss=351, v_num=]hi
-Epoch 0:  11%|█▏        | 89/786 [6:50:33<53:35:12, 276.78s/it, loss=351, v_num=]Epoch 0:  11%|█▏        | 89/786 [6:50:33<53:35:12, 276.78s/it, loss=354, v_num=]hi
-Epoch 0:  11%|█▏        | 90/786 [6:54:44<53:27:16, 276.49s/it, loss=354, v_num=]Epoch 0:  11%|█▏        | 90/786 [6:54:44<53:27:16, 276.49s/it, loss=355, v_num=]hi
-Epoch 0:  12%|█▏        | 91/786 [6:58:15<53:14:19, 275.77s/it, loss=355, v_num=]Epoch 0:  12%|█▏        | 91/786 [6:58:15<53:14:19, 275.77s/it, loss=345, v_num=]hi
-Epoch 0:  12%|█▏        | 92/786 [7:07:41<53:46:18, 278.93s/it, loss=345, v_num=]Epoch 0:  12%|█▏        | 92/786 [7:07:41<53:46:18, 278.93s/it, loss=340, v_num=]hi
-Epoch 0:  12%|█▏        | 93/786 [7:15:57<54:08:35, 281.26s/it, loss=340, v_num=]Epoch 0:  12%|█▏        | 93/786 [7:15:57<54:08:35, 281.26s/it, loss=347, v_num=]hi
-Epoch 0:  12%|█▏        | 94/786 [7:25:13<54:37:37, 284.19s/it, loss=347, v_num=]Epoch 0:  12%|█▏        | 94/786 [7:25:13<54:37:37, 284.19s/it, loss=343, v_num=]hi
-Epoch 0:  12%|█▏        | 95/786 [7:30:08<54:34:13, 284.30s/it, loss=343, v_num=]Epoch 0:  12%|█▏        | 95/786 [7:30:09<54:34:18, 284.31s/it, loss=343, v_num=]hi
-Epoch 0:  12%|█▏        | 96/786 [7:39:21<55:01:34, 287.09s/it, loss=343, v_num=]Epoch 0:  12%|█▏        | 96/786 [7:39:21<55:01:34, 287.09s/it, loss=346, v_num=]hi
-Epoch 0:  12%|█▏        | 97/786 [7:45:20<55:05:20, 287.84s/it, loss=346, v_num=]Epoch 0:  12%|█▏        | 97/786 [7:45:20<55:05:20, 287.84s/it, loss=338, v_num=]hi
-Epoch 0:  12%|█▏        | 98/786 [7:54:08<55:28:40, 290.29s/it, loss=338, v_num=]Epoch 0:  12%|█▏        | 98/786 [7:54:08<55:28:40, 290.29s/it, loss=330, v_num=]hi
-Epoch 0:  13%|█▎        | 99/786 [8:02:08<55:45:48, 292.21s/it, loss=330, v_num=]Epoch 0:  13%|█▎        | 99/786 [8:02:08<55:45:48, 292.21s/it, loss=321, v_num=]hi
-Epoch 0:  13%|█▎        | 100/786 [8:08:56<55:54:07, 293.36s/it, loss=321, v_num=]Epoch 0:  13%|█▎        | 100/786 [8:08:56<55:54:08, 293.36s/it, loss=319, v_num=]hi
-Epoch 0:  13%|█▎        | 101/786 [8:17:27<56:13:51, 295.52s/it, loss=319, v_num=]Epoch 0:  13%|█▎        | 101/786 [8:17:27<56:13:51, 295.52s/it, loss=316, v_num=]hi
-Epoch 0:  13%|█▎        | 102/786 [8:25:45<56:31:34, 297.51s/it, loss=316, v_num=]Epoch 0:  13%|█▎        | 102/786 [8:25:45<56:31:34, 297.51s/it, loss=318, v_num=]hi
-Epoch 0:  13%|█▎        | 103/786 [8:33:50<56:47:21, 299.33s/it, loss=318, v_num=]Epoch 0:  13%|█▎        | 103/786 [8:33:50<56:47:21, 299.33s/it, loss=319, v_num=]hi
-Epoch 0:  13%|█▎        | 104/786 [8:42:19<57:05:12, 301.34s/it, loss=319, v_num=]Epoch 0:  13%|█▎        | 104/786 [8:42:19<57:05:13, 301.34s/it, loss=307, v_num=]hi
-Epoch 0:  13%|█▎        | 105/786 [8:50:16<57:19:14, 303.02s/it, loss=307, v_num=]Epoch 0:  13%|█▎        | 105/786 [8:50:16<57:19:14, 303.02s/it, loss=304, v_num=]hi
-Epoch 0:  13%|█▎        | 106/786 [8:58:10<57:32:26, 304.63s/it, loss=304, v_num=]Epoch 0:  13%|█▎        | 106/786 [8:58:10<57:32:26, 304.63s/it, loss=307, v_num=]hi
-Epoch 0:  14%|█▎        | 107/786 [9:07:31<57:54:28, 307.02s/it, loss=307, v_num=]Epoch 0:  14%|█▎        | 107/786 [9:07:31<57:54:28, 307.02s/it, loss=308, v_num=]hi
-Epoch 0:  14%|█▎        | 108/786 [9:15:25<58:06:49, 308.57s/it, loss=308, v_num=]Epoch 0:  14%|█▎        | 108/786 [9:15:25<58:06:49, 308.57s/it, loss=313, v_num=]hi
-Epoch 0:  14%|█▍        | 109/786 [9:23:32<58:20:10, 310.21s/it, loss=313, v_num=]Epoch 0:  14%|█▍        | 109/786 [9:23:32<58:20:10, 310.21s/it, loss=316, v_num=]hi
-Epoch 0:  14%|█▍        | 110/786 [9:31:32<58:32:20, 311.75s/it, loss=316, v_num=]Epoch 0:  14%|█▍        | 110/786 [9:31:32<58:32:20, 311.75s/it, loss=320, v_num=]hi
-Epoch 0:  14%|█▍        | 111/786 [9:39:13<58:42:21, 313.10s/it, loss=320, v_num=]Epoch 0:  14%|█▍        | 111/786 [9:39:13<58:42:21, 313.10s/it, loss=322, v_num=]hi
-Epoch 0:  14%|█▍        | 112/786 [9:44:41<58:38:34, 313.23s/it, loss=322, v_num=]Epoch 0:  14%|█▍        | 112/786 [9:44:45<58:39:01, 313.27s/it, loss=319, v_num=]hi
-Epoch 0:  14%|█▍        | 113/786 [9:53:34<58:55:12, 315.17s/it, loss=319, v_num=]Epoch 0:  14%|█▍        | 113/786 [9:53:34<58:55:12, 315.17s/it, loss=308, v_num=]hi
-Epoch 0:  15%|█▍        | 114/786 [10:03:24<59:16:56, 317.58s/it, loss=308, v_num=]Epoch 0:  15%|█▍        | 114/786 [10:03:26<59:17:04, 317.60s/it, loss=306, v_num=]hi
-Epoch 0:  15%|█▍        | 115/786 [10:11:00<59:25:05, 318.79s/it, loss=306, v_num=]Epoch 0:  15%|█▍        | 115/786 [10:11:07<59:25:45, 318.85s/it, loss=310, v_num=]hi
-Epoch 0:  15%|█▍        | 116/786 [10:19:59<59:41:00, 320.69s/it, loss=310, v_num=]Epoch 0:  15%|█▍        | 116/786 [10:20:06<59:41:40, 320.75s/it, loss=302, v_num=]hi
-Epoch 0:  15%|█▍        | 117/786 [10:28:53<59:55:58, 322.51s/it, loss=302, v_num=]Epoch 0:  15%|█▍        | 117/786 [10:28:54<59:56:03, 322.52s/it, loss=302, v_num=]hi
-Epoch 0:  15%|█▌        | 118/786 [10:35:03<59:55:03, 322.91s/it, loss=302, v_num=]Epoch 0:  15%|█▌        | 118/786 [10:35:03<59:55:03, 322.91s/it, loss=306, v_num=]hi
-Epoch 0:  15%|█▌        | 119/786 [10:42:37<60:01:53, 324.01s/it, loss=306, v_num=]Epoch 0:  15%|█▌        | 119/786 [10:42:37<60:01:53, 324.01s/it, loss=310, v_num=]hi
-Epoch 0:  15%|█▌        | 120/786 [10:50:12<60:08:40, 325.11s/it, loss=310, v_num=]Epoch 0:  15%|█▌        | 120/786 [10:50:12<60:08:40, 325.11s/it, loss=306, v_num=]hi
-Epoch 0:  15%|█▌        | 121/786 [10:58:13<60:17:33, 326.40s/it, loss=306, v_num=]Epoch 0:  15%|█▌        | 121/786 [10:58:17<60:17:51, 326.42s/it, loss=304, v_num=]hi
-Epoch 0:  16%|█▌        | 122/786 [11:04:37<60:17:16, 326.86s/it, loss=304, v_num=]Epoch 0:  16%|█▌        | 122/786 [11:04:37<60:17:16, 326.86s/it, loss=304, v_num=]hi
-Epoch 0:  16%|█▌        | 123/786 [11:12:07<60:22:56, 327.87s/it, loss=304, v_num=]Epoch 0:  16%|█▌        | 123/786 [11:12:07<60:22:56, 327.87s/it, loss=308, v_num=]hi
-Epoch 0:  16%|█▌        | 124/786 [11:18:01<60:19:47, 328.08s/it, loss=308, v_num=]Epoch 0:  16%|█▌        | 124/786 [11:18:01<60:19:47, 328.08s/it, loss=308, v_num=]hi
-Epoch 0:  16%|█▌        | 125/786 [11:26:34<60:30:35, 329.55s/it, loss=308, v_num=]Epoch 0:  16%|█▌        | 125/786 [11:26:34<60:30:35, 329.55s/it, loss=305, v_num=]hi
-Epoch 0:  16%|█▌        | 126/786 [11:33:59<60:35:09, 330.47s/it, loss=305, v_num=]Epoch 0:  16%|█▌        | 126/786 [11:33:59<60:35:09, 330.47s/it, loss=300, v_num=]hi
-Epoch 0:  16%|█▌        | 127/786 [11:38:30<60:24:32, 330.00s/it, loss=300, v_num=]Epoch 0:  16%|█▌        | 127/786 [11:38:30<60:24:32, 330.00s/it, loss=299, v_num=]hi
-Epoch 0:  16%|█▋        | 128/786 [11:43:34<60:16:49, 329.80s/it, loss=299, v_num=]Epoch 0:  16%|█▋        | 128/786 [11:43:34<60:16:49, 329.80s/it, loss=293, v_num=]hi
-Epoch 0:  16%|█▋        | 129/786 [11:51:34<60:24:06, 330.97s/it, loss=293, v_num=]Epoch 0:  16%|█▋        | 129/786 [11:51:34<60:24:06, 330.97s/it, loss=291, v_num=]hi
-Epoch 0:  17%|█▋        | 130/786 [11:59:27<60:30:31, 332.06s/it, loss=291, v_num=]Epoch 0:  17%|█▋        | 130/786 [11:59:27<60:30:31, 332.06s/it, loss=291, v_num=]hi
-Epoch 0:  17%|█▋        | 131/786 [12:06:59<60:34:55, 332.97s/it, loss=291, v_num=]Epoch 0:  17%|█▋        | 131/786 [12:06:59<60:34:55, 332.97s/it, loss=286, v_num=]hi
-Epoch 0:  17%|█▋        | 132/786 [12:11:15<60:23:03, 332.39s/it, loss=286, v_num=]Epoch 0:  17%|█▋        | 132/786 [12:11:15<60:23:04, 332.39s/it, loss=284, v_num=]hi
-Epoch 0:  17%|█▋        | 133/786 [12:17:28<60:20:50, 332.70s/it, loss=284, v_num=]Epoch 0:  17%|█▋        | 133/786 [12:17:28<60:20:50, 332.70s/it, loss=284, v_num=]hi
-Epoch 0:  17%|█▋        | 134/786 [12:25:59<60:29:45, 334.03s/it, loss=284, v_num=]Epoch 0:  17%|█▋        | 134/786 [12:25:59<60:29:45, 334.03s/it, loss=282, v_num=]hi
-Epoch 0:  17%|█▋        | 135/786 [12:34:21<60:37:43, 335.27s/it, loss=282, v_num=]Epoch 0:  17%|█▋        | 135/786 [12:34:21<60:37:43, 335.27s/it, loss=275, v_num=]hi
-Epoch 0:  17%|█▋        | 136/786 [12:42:22<60:43:42, 336.34s/it, loss=275, v_num=]Epoch 0:  17%|█▋        | 136/786 [12:42:22<60:43:42, 336.34s/it, loss=273, v_num=]hi
-Epoch 0:  17%|█▋        | 137/786 [12:50:32<60:50:13, 337.46s/it, loss=273, v_num=]Epoch 0:  17%|█▋        | 137/786 [12:50:32<60:50:13, 337.46s/it, loss=274, v_num=]hi
-Epoch 0:  18%|█▊        | 138/786 [12:58:21<60:54:53, 338.42s/it, loss=274, v_num=]Epoch 0:  18%|█▊        | 138/786 [12:58:21<60:54:53, 338.42s/it, loss=275, v_num=]hi
-Epoch 0:  18%|█▊        | 139/786 [13:05:51<60:57:55, 339.22s/it, loss=275, v_num=]Epoch 0:  18%|█▊        | 139/786 [13:05:51<60:57:55, 339.22s/it, loss=269, v_num=]hi
-Epoch 0:  18%|█▊        | 140/786 [13:13:36<61:01:56, 340.12s/it, loss=269, v_num=]Epoch 0:  18%|█▊        | 140/786 [13:13:36<61:01:56, 340.12s/it, loss=267, v_num=]hi
-Epoch 0:  18%|█▊        | 141/786 [13:20:28<61:01:46, 340.63s/it, loss=267, v_num=]Epoch 0:  18%|█▊        | 141/786 [13:20:28<61:01:47, 340.63s/it, loss=263, v_num=]hi
-Epoch 0:  18%|█▊        | 142/786 [13:27:48<61:03:33, 341.32s/it, loss=263, v_num=]Epoch 0:  18%|█▊        | 142/786 [13:27:48<61:03:33, 341.32s/it, loss=254, v_num=]hi
-Epoch 0:  18%|█▊        | 143/786 [13:34:13<61:01:09, 341.63s/it, loss=254, v_num=]Epoch 0:  18%|█▊        | 143/786 [13:34:13<61:01:09, 341.63s/it, loss=248, v_num=]hi
-Epoch 0:  18%|█▊        | 144/786 [13:38:35<60:49:33, 341.08s/it, loss=248, v_num=]Epoch 0:  18%|█▊        | 144/786 [13:38:35<60:49:33, 341.08s/it, loss=253, v_num=]hi
-Epoch 0:  18%|█▊        | 145/786 [13:45:11<60:47:54, 341.46s/it, loss=253, v_num=]Epoch 0:  18%|█▊        | 145/786 [13:45:11<60:47:54, 341.46s/it, loss=247, v_num=]hi
-Epoch 0:  19%|█▊        | 146/786 [13:52:12<60:48:03, 342.01s/it, loss=247, v_num=]Epoch 0:  19%|█▊        | 146/786 [13:52:12<60:48:03, 342.01s/it, loss=244, v_num=]hi
-Epoch 0:  19%|█▊        | 147/786 [13:59:39<60:49:56, 342.72s/it, loss=244, v_num=]Epoch 0:  19%|█▊        | 147/786 [13:59:39<60:49:56, 342.72s/it, loss=239, v_num=]hi
-Epoch 0:  19%|█▉        | 148/786 [14:06:48<60:50:25, 343.30s/it, loss=239, v_num=]Epoch 0:  19%|█▉        | 148/786 [14:06:48<60:50:25, 343.30s/it, loss=236, v_num=]hi
-Epoch 0:  19%|█▉        | 149/786 [14:14:02<60:51:08, 343.91s/it, loss=236, v_num=]Epoch 0:  19%|█▉        | 149/786 [14:14:02<60:51:08, 343.91s/it, loss=229, v_num=]hi
-Epoch 0:  19%|█▉        | 150/786 [14:17:58<60:37:49, 343.19s/it, loss=229, v_num=]Epoch 0:  19%|█▉        | 150/786 [14:17:58<60:37:49, 343.19s/it, loss=220, v_num=]hi
-Epoch 0:  19%|█▉        | 151/786 [14:23:06<60:29:35, 342.95s/it, loss=220, v_num=]Epoch 0:  19%|█▉        | 151/786 [14:23:06<60:29:35, 342.95s/it, loss=220, v_num=]hi
-Epoch 0:  19%|█▉        | 152/786 [14:30:09<60:29:28, 343.48s/it, loss=220, v_num=]Epoch 0:  19%|█▉        | 152/786 [14:30:09<60:29:28, 343.48s/it, loss=223, v_num=]hi
-Epoch 0:  19%|█▉        | 153/786 [14:35:48<60:23:26, 343.45s/it, loss=223, v_num=]Epoch 0:  19%|█▉        | 153/786 [14:35:48<60:23:26, 343.45s/it, loss=216, v_num=]hi
-Epoch 0:  20%|█▉        | 154/786 [14:40:13<60:12:20, 342.94s/it, loss=216, v_num=]Epoch 0:  20%|█▉        | 154/786 [14:40:13<60:12:20, 342.94s/it, loss=213, v_num=]hi
-Epoch 0:  20%|█▉        | 155/786 [14:46:30<60:08:57, 343.17s/it, loss=213, v_num=]Epoch 0:  20%|█▉        | 155/786 [14:46:30<60:08:57, 343.17s/it, loss=216, v_num=]hi
-Epoch 0:  20%|█▉        | 156/786 [14:53:31<60:08:27, 343.66s/it, loss=216, v_num=]Epoch 0:  20%|█▉        | 156/786 [14:53:31<60:08:27, 343.66s/it, loss=215, v_num=]hi
-Epoch 0:  20%|█▉        | 157/786 [14:59:47<60:04:52, 343.87s/it, loss=215, v_num=]Epoch 0:  20%|█▉        | 157/786 [14:59:47<60:04:52, 343.87s/it, loss=208, v_num=]hi
-Epoch 0:  20%|██        | 158/786 [15:04:29<59:55:05, 343.48s/it, loss=208, v_num=]Epoch 0:  20%|██        | 158/786 [15:04:29<59:55:06, 343.48s/it, loss=205, v_num=]hi
-Epoch 0:  20%|██        | 159/786 [15:10:26<59:50:15, 343.57s/it, loss=205, v_num=]Epoch 0:  20%|██        | 159/786 [15:10:26<59:50:15, 343.57s/it, loss=209, v_num=]hi
-Epoch 0:  20%|██        | 160/786 [15:17:24<59:49:22, 344.03s/it, loss=209, v_num=]Epoch 0:  20%|██        | 160/786 [15:17:24<59:49:22, 344.03s/it, loss=208, v_num=]hi
-Epoch 0:  20%|██        | 161/786 [15:21:42<59:38:02, 343.49s/it, loss=208, v_num=]Epoch 0:  20%|██        | 161/786 [15:21:42<59:38:02, 343.49s/it, loss=212, v_num=]hi
-Epoch 0:  21%|██        | 162/786 [15:26:56<59:30:25, 343.31s/it, loss=212, v_num=]Epoch 0:  21%|██        | 162/786 [15:26:56<59:30:25, 343.31s/it, loss=213, v_num=]hi
-Epoch 0:  21%|██        | 163/786 [15:33:58<59:29:45, 343.80s/it, loss=213, v_num=]Epoch 0:  21%|██        | 163/786 [15:33:58<59:29:45, 343.80s/it, loss=210, v_num=]hi
-Epoch 0:  21%|██        | 164/786 [15:38:00<59:17:35, 343.18s/it, loss=210, v_num=]Epoch 0:  21%|██        | 164/786 [15:38:00<59:17:35, 343.18s/it, loss=205, v_num=]hi
-Epoch 0:  21%|██        | 165/786 [15:44:00<59:12:52, 343.27s/it, loss=205, v_num=]Epoch 0:  21%|██        | 165/786 [15:44:00<59:12:52, 343.27s/it, loss=201, v_num=]hi
-Epoch 0:  21%|██        | 166/786 [15:50:30<59:10:05, 343.56s/it, loss=201, v_num=]Epoch 0:  21%|██        | 166/786 [15:50:30<59:10:05, 343.56s/it, loss=200, v_num=]hi
-Epoch 0:  21%|██        | 167/786 [15:57:41<59:09:46, 344.08s/it, loss=200, v_num=]Epoch 0:  21%|██        | 167/786 [15:57:41<59:09:46, 344.08s/it, loss=198, v_num=]hi
-Epoch 0:  21%|██▏       | 168/786 [16:05:02<59:09:59, 344.66s/it, loss=198, v_num=]Epoch 0:  21%|██▏       | 168/786 [16:05:02<59:09:59, 344.66s/it, loss=196, v_num=]hi
-Epoch 0:  22%|██▏       | 169/786 [16:12:41<59:11:10, 345.33s/it, loss=196, v_num=]Epoch 0:  22%|██▏       | 169/786 [16:12:41<59:11:10, 345.33s/it, loss=196, v_num=]hi
-Epoch 0:  22%|██▏       | 170/786 [16:16:25<58:58:04, 344.62s/it, loss=196, v_num=]Epoch 0:  22%|██▏       | 170/786 [16:16:25<58:58:04, 344.62s/it, loss=196, v_num=]hi
-Epoch 0:  22%|██▏       | 171/786 [16:21:10<58:48:46, 344.27s/it, loss=196, v_num=]Epoch 0:  22%|██▏       | 171/786 [16:21:10<58:48:46, 344.27s/it, loss=195, v_num=]hi
-Epoch 0:  22%|██▏       | 172/786 [16:27:34<58:45:23, 344.50s/it, loss=195, v_num=]Epoch 0:  22%|██▏       | 172/786 [16:27:34<58:45:23, 344.50s/it, loss=189, v_num=]hi
-Epoch 0:  22%|██▏       | 173/786 [16:34:43<58:44:40, 344.99s/it, loss=189, v_num=]Epoch 0:  22%|██▏       | 173/786 [16:34:43<58:44:40, 344.99s/it, loss=189, v_num=]hi
-Epoch 0:  22%|██▏       | 174/786 [16:38:41<58:32:37, 344.37s/it, loss=189, v_num=]Epoch 0:  22%|██▏       | 174/786 [16:38:41<58:32:37, 344.37s/it, loss=189, v_num=]hi
-Epoch 0:  22%|██▏       | 175/786 [16:44:27<58:26:58, 344.38s/it, loss=189, v_num=]Epoch 0:  22%|██▏       | 175/786 [16:44:27<58:26:58, 344.38s/it, loss=180, v_num=]hi
-Epoch 0:  22%|██▏       | 176/786 [16:51:31<58:25:50, 344.84s/it, loss=180, v_num=]Epoch 0:  22%|██▏       | 176/786 [16:51:31<58:25:50, 344.84s/it, loss=177, v_num=]hi
-Epoch 0:  23%|██▎       | 177/786 [16:55:36<58:14:24, 344.28s/it, loss=177, v_num=]Epoch 0:  23%|██▎       | 177/786 [16:55:36<58:14:24, 344.28s/it, loss=173, v_num=]hi
-Epoch 0:  23%|██▎       | 178/786 [17:01:28<58:09:05, 344.32s/it, loss=173, v_num=]Epoch 0:  23%|██▎       | 178/786 [17:01:28<58:09:05, 344.32s/it, loss=171, v_num=]hi
-Epoch 0:  23%|██▎       | 179/786 [17:09:12<58:10:06, 344.99s/it, loss=171, v_num=]Epoch 0:  23%|██▎       | 179/786 [17:09:12<58:10:06, 344.99s/it, loss=167, v_num=]hi
-Epoch 0:  23%|██▎       | 180/786 [17:17:17<58:12:13, 345.76s/it, loss=167, v_num=]Epoch 0:  23%|██▎       | 180/786 [17:17:17<58:12:13, 345.76s/it, loss=168, v_num=]hi
-Epoch 0:  23%|██▎       | 181/786 [17:23:16<58:07:10, 345.84s/it, loss=168, v_num=]Epoch 0:  23%|██▎       | 181/786 [17:23:16<58:07:10, 345.84s/it, loss=165, v_num=]hi
-Epoch 0:  23%|██▎       | 182/786 [17:30:10<58:05:10, 346.21s/it, loss=165, v_num=]Epoch 0:  23%|██▎       | 182/786 [17:30:10<58:05:10, 346.21s/it, loss=166, v_num=]hi
-Epoch 0:  23%|██▎       | 183/786 [17:34:33<57:54:50, 345.76s/it, loss=166, v_num=]Epoch 0:  23%|██▎       | 183/786 [17:34:33<57:54:50, 345.76s/it, loss=167, v_num=]hi
-Epoch 0:  23%|██▎       | 184/786 [17:39:48<57:47:24, 345.59s/it, loss=167, v_num=]Epoch 0:  23%|██▎       | 184/786 [17:39:48<57:47:24, 345.59s/it, loss=162, v_num=]hi
-Epoch 0:  24%|██▎       | 185/786 [17:45:50<57:42:34, 345.68s/it, loss=162, v_num=]Epoch 0:  24%|██▎       | 185/786 [17:45:50<57:42:34, 345.68s/it, loss=158, v_num=]hi
-Epoch 0:  24%|██▎       | 186/786 [17:54:27<57:45:58, 346.60s/it, loss=158, v_num=]Epoch 0:  24%|██▎       | 186/786 [17:54:27<57:45:58, 346.60s/it, loss=157, v_num=]hi
-Epoch 0:  24%|██▍       | 187/786 [18:02:34<57:47:41, 347.35s/it, loss=157, v_num=]Epoch 0:  24%|██▍       | 187/786 [18:02:34<57:47:41, 347.35s/it, loss=159, v_num=]hi
-Epoch 0:  24%|██▍       | 188/786 [18:10:02<57:47:14, 347.88s/it, loss=159, v_num=]Epoch 0:  24%|██▍       | 188/786 [18:10:02<57:47:14, 347.88s/it, loss=162, v_num=]hi
-Epoch 0:  24%|██▍       | 189/786 [18:18:04<57:48:30, 348.59s/it, loss=162, v_num=]Epoch 0:  24%|██▍       | 189/786 [18:18:04<57:48:30, 348.59s/it, loss=159, v_num=]hi
-Epoch 0:  24%|██▍       | 190/786 [18:25:46<57:48:38, 349.19s/it, loss=159, v_num=]Epoch 0:  24%|██▍       | 190/786 [18:25:46<57:48:38, 349.19s/it, loss=158, v_num=]hi
-Epoch 0:  24%|██▍       | 191/786 [18:32:02<57:44:13, 349.33s/it, loss=158, v_num=]Epoch 0:  24%|██▍       | 191/786 [18:32:02<57:44:13, 349.33s/it, loss=158, v_num=]hi
-Epoch 0:  24%|██▍       | 192/786 [18:36:14<57:33:23, 348.83s/it, loss=158, v_num=]Epoch 0:  24%|██▍       | 192/786 [18:36:14<57:33:23, 348.83s/it, loss=155, v_num=]hi
-Epoch 0:  25%|██▍       | 193/786 [18:42:47<57:29:49, 349.06s/it, loss=155, v_num=]Epoch 0:  25%|██▍       | 193/786 [18:42:47<57:29:49, 349.06s/it, loss=157, v_num=]hi
-Epoch 0:  25%|██▍       | 194/786 [18:50:30<57:29:48, 349.64s/it, loss=157, v_num=]Epoch 0:  25%|██▍       | 194/786 [18:50:30<57:29:48, 349.64s/it, loss=156, v_num=]hi
-Epoch 0:  25%|██▍       | 195/786 [18:54:33<57:18:33, 349.09s/it, loss=156, v_num=]Epoch 0:  25%|██▍       | 195/786 [18:54:33<57:18:33, 349.09s/it, loss=159, v_num=]hi
-Epoch 0:  25%|██▍       | 196/786 [19:01:43<57:16:50, 349.51s/it, loss=159, v_num=]Epoch 0:  25%|██▍       | 196/786 [19:01:43<57:16:50, 349.51s/it, loss=162, v_num=]hi
-Epoch 0:  25%|██▌       | 197/786 [19:06:53<57:09:02, 349.31s/it, loss=162, v_num=]Epoch 0:  25%|██▌       | 197/786 [19:06:53<57:09:02, 349.31s/it, loss=167, v_num=]hi
-Epoch 0:  25%|██▌       | 198/786 [19:14:02<57:07:08, 349.71s/it, loss=167, v_num=]Epoch 0:  25%|██▌       | 198/786 [19:14:02<57:07:08, 349.71s/it, loss=173, v_num=]hi
-Epoch 0:  25%|██▌       | 199/786 [19:18:21<56:56:51, 349.25s/it, loss=173, v_num=]Epoch 0:  25%|██▌       | 199/786 [19:18:21<56:56:51, 349.25s/it, loss=169, v_num=]hi
-Epoch 0:  25%|██▌       | 200/786 [19:26:40<56:58:22, 350.00s/it, loss=169, v_num=]Epoch 0:  25%|██▌       | 200/786 [19:26:40<56:58:22, 350.00s/it, loss=168, v_num=]hi
-Epoch 0:  26%|██▌       | 201/786 [19:32:59<56:53:56, 350.15s/it, loss=168, v_num=]Epoch 0:  26%|██▌       | 201/786 [19:32:59<56:53:56, 350.15s/it, loss=169, v_num=]hi
-Epoch 0:  26%|██▌       | 202/786 [19:41:44<56:56:29, 351.01s/it, loss=169, v_num=]Epoch 0:  26%|██▌       | 202/786 [19:41:44<56:56:29, 351.01s/it, loss=166, v_num=]hi
-Epoch 0:  26%|██▌       | 203/786 [19:49:25<56:55:55, 351.55s/it, loss=166, v_num=]Epoch 0:  26%|██▌       | 203/786 [19:49:25<56:55:55, 351.55s/it, loss=165, v_num=]hi
-Epoch 0:  26%|██▌       | 204/786 [19:57:37<56:56:44, 352.24s/it, loss=165, v_num=]Epoch 0:  26%|██▌       | 204/786 [19:57:37<56:56:44, 352.24s/it, loss=167, v_num=]hi
-Epoch 0:  26%|██▌       | 205/786 [20:06:42<57:00:00, 353.18s/it, loss=167, v_num=]Epoch 0:  26%|██▌       | 205/786 [20:06:42<57:00:00, 353.18s/it, loss=173, v_num=]hi
-Epoch 0:  26%|██▌       | 206/786 [20:16:51<57:06:07, 354.43s/it, loss=173, v_num=]Epoch 0:  26%|██▌       | 206/786 [20:16:51<57:06:07, 354.43s/it, loss=172, v_num=]hi
-Epoch 0:  26%|██▋       | 207/786 [20:25:36<57:08:10, 355.25s/it, loss=172, v_num=]Epoch 0:  26%|██▋       | 207/786 [20:25:36<57:08:10, 355.25s/it, loss=173, v_num=]hi
-Epoch 0:  26%|██▋       | 208/786 [20:34:15<57:09:49, 356.04s/it, loss=173, v_num=]Epoch 0:  26%|██▋       | 208/786 [20:34:15<57:09:49, 356.04s/it, loss=170, v_num=]hi
-Epoch 0:  27%|██▋       | 209/786 [20:44:15<57:15:05, 357.20s/it, loss=170, v_num=]Epoch 0:  27%|██▋       | 209/786 [20:44:15<57:15:05, 357.20s/it, loss=174, v_num=]hi
-Epoch 0:  27%|██▋       | 210/786 [20:50:40<57:10:26, 357.34s/it, loss=174, v_num=]Epoch 0:  27%|██▋       | 210/786 [20:50:40<57:10:26, 357.34s/it, loss=174, v_num=]hi
-Epoch 0:  27%|██▋       | 211/786 [20:57:32<57:06:57, 357.60s/it, loss=174, v_num=]Epoch 0:  27%|██▋       | 211/786 [20:57:32<57:06:57, 357.60s/it, loss=175, v_num=]hi
-Epoch 0:  27%|██▋       | 212/786 [21:05:59<57:07:44, 358.30s/it, loss=175, v_num=]Epoch 0:  27%|██▋       | 212/786 [21:05:59<57:07:44, 358.30s/it, loss=175, v_num=]hi
-Epoch 0:  27%|██▋       | 213/786 [21:13:57<57:07:08, 358.86s/it, loss=175, v_num=]Epoch 0:  27%|██▋       | 213/786 [21:13:57<57:07:08, 358.86s/it, loss=172, v_num=]hi
-Epoch 0:  27%|██▋       | 214/786 [21:19:45<57:00:40, 358.81s/it, loss=172, v_num=]Epoch 0:  27%|██▋       | 214/786 [21:19:45<57:00:40, 358.81s/it, loss=178, v_num=]hi
-Epoch 0:  27%|██▋       | 215/786 [21:24:57<56:52:36, 358.59s/it, loss=178, v_num=]Epoch 0:  27%|██▋       | 215/786 [21:24:57<56:52:36, 358.59s/it, loss=179, v_num=]hi
-Epoch 0:  27%|██▋       | 216/786 [21:31:11<56:47:19, 358.67s/it, loss=179, v_num=]Epoch 0:  27%|██▋       | 216/786 [21:31:11<56:47:19, 358.67s/it, loss=179, v_num=]hi
-Epoch 0:  28%|██▊       | 217/786 [21:39:54<56:48:31, 359.42s/it, loss=179, v_num=]Epoch 0:  28%|██▊       | 217/786 [21:39:54<56:48:31, 359.42s/it, loss=175, v_num=]hi
-Epoch 0:  28%|██▊       | 218/786 [21:47:33<56:46:51, 359.88s/it, loss=175, v_num=]Epoch 0:  28%|██▊       | 218/786 [21:47:33<56:46:51, 359.88s/it, loss=168, v_num=]hi
-Epoch 0:  28%|██▊       | 219/786 [21:53:34<56:40:54, 359.88s/it, loss=168, v_num=]Epoch 0:  28%|██▊       | 219/786 [21:53:34<56:40:54, 359.88s/it, loss=169, v_num=]hi
-Epoch 0:  28%|██▊       | 220/786 [21:59:55<56:35:47, 359.98s/it, loss=169, v_num=]Epoch 0:  28%|██▊       | 220/786 [21:59:55<56:35:47, 359.98s/it, loss=168, v_num=]hi
-Epoch 0:  28%|██▊       | 221/786 [22:07:30<56:33:50, 360.41s/it, loss=168, v_num=]Epoch 0:  28%|██▊       | 221/786 [22:07:30<56:33:50, 360.41s/it, loss=165, v_num=]hi
-Epoch 0:  28%|██▊       | 222/786 [22:15:50<56:33:45, 361.04s/it, loss=165, v_num=]Epoch 0:  28%|██▊       | 222/786 [22:15:50<56:33:45, 361.04s/it, loss=168, v_num=]hi
-Epoch 0:  28%|██▊       | 223/786 [22:24:19<56:33:58, 361.70s/it, loss=168, v_num=]Epoch 0:  28%|██▊       | 223/786 [22:24:19<56:33:58, 361.70s/it, loss=165, v_num=]hi
-Epoch 0:  28%|██▊       | 224/786 [22:32:36<56:33:36, 362.31s/it, loss=165, v_num=]Epoch 0:  28%|██▊       | 224/786 [22:32:36<56:33:37, 362.31s/it, loss=166, v_num=]hi
-Epoch 0:  29%|██▊       | 225/786 [22:40:38<56:32:30, 362.84s/it, loss=166, v_num=]Epoch 0:  29%|██▊       | 225/786 [22:40:38<56:32:30, 362.84s/it, loss=166, v_num=]hi
-Epoch 0:  29%|██▉       | 226/786 [22:47:12<56:27:45, 362.97s/it, loss=166, v_num=]Epoch 0:  29%|██▉       | 226/786 [22:47:12<56:27:45, 362.97s/it, loss=167, v_num=]hi
-Epoch 0:  29%|██▉       | 227/786 [22:55:31<56:27:18, 363.58s/it, loss=167, v_num=]Epoch 0:  29%|██▉       | 227/786 [22:55:31<56:27:18, 363.58s/it, loss=167, v_num=]hi
-Epoch 0:  29%|██▉       | 228/786 [23:03:42<56:26:25, 364.13s/it, loss=167, v_num=]Epoch 0:  29%|██▉       | 228/786 [23:03:42<56:26:25, 364.13s/it, loss=164, v_num=]hi
-Epoch 0:  29%|██▉       | 229/786 [23:12:51<56:27:51, 364.94s/it, loss=164, v_num=]Epoch 0:  29%|██▉       | 229/786 [23:12:51<56:27:51, 364.94s/it, loss=163, v_num=]hi
-Epoch 0:  29%|██▉       | 230/786 [23:19:30<56:23:09, 365.09s/it, loss=163, v_num=]Epoch 0:  29%|██▉       | 230/786 [23:19:30<56:23:09, 365.09s/it, loss=164, v_num=]hi
-Epoch 0:  29%|██▉       | 231/786 [23:29:16<56:25:56, 366.05s/it, loss=164, v_num=]Epoch 0:  29%|██▉       | 231/786 [23:29:16<56:25:56, 366.05s/it, loss=160, v_num=]hi
-Epoch 0:  30%|██▉       | 232/786 [23:37:36<56:25:08, 366.62s/it, loss=160, v_num=]Epoch 0:  30%|██▉       | 232/786 [23:37:36<56:25:08, 366.62s/it, loss=161, v_num=]hi
-Epoch 0:  30%|██▉       | 233/786 [23:45:22<56:22:58, 367.05s/it, loss=161, v_num=]Epoch 0:  30%|██▉       | 233/786 [23:45:22<56:22:58, 367.05s/it, loss=167, v_num=]hi
-Epoch 0:  30%|██▉       | 234/786 [23:52:22<56:18:55, 367.27s/it, loss=167, v_num=]Epoch 0:  30%|██▉       | 234/786 [23:52:22<56:18:55, 367.27s/it, loss=165, v_num=]hi
-Epoch 0:  30%|██▉       | 235/786 [24:00:50<56:18:18, 367.87s/it, loss=165, v_num=]Epoch 0:  30%|██▉       | 235/786 [24:00:50<56:18:18, 367.87s/it, loss=161, v_num=]hi

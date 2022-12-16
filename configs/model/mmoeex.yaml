@@ -2,10 +2,10 @@
 _target_: project.model.mixture_of_experts.MMoEEx
 
 config:
-  num_tasks: 1
-  num_experts: 1
+  num_tasks: 641
+  num_experts: 5
   num_layers: 1
-  num_units: 1
+  num_units: 20
 
   sequence_len: 100
   num_features: 1278
