@@ -3,11 +3,12 @@ _target_: project.model.mixture_of_experts.MH
 
 config:
   num_tasks: 641
-  num_layers: 2
-  num_units: 10
+  num_units: 25
   
   sequence_len: 100
-  num_features: 1278
+  num_features: 1918
+  lstm_layers: 2
+  lstm_hidden: 650
 
   use_expert_bias: yes
   use_gate_bias: yes 
