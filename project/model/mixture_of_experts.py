@@ -20,23 +20,25 @@ class MH(pl.LightningModule):
         super(MH, self).__init__()
         self.save_hyperparameters()
         self.num_tasks = config.num_tasks # This decides how many feed forward neural networks we are going to feed our data to.
-        self.num_layers = config.num_layers
         self.num_units = config.num_units # Number of neurons in the hidden layer of the towers.
-        self.num_shared_bottom = config.num_shared_bottom # This should be set to 1 in the config file, given that we have one shared convolutional layer.
-        
+        #self.num_layers_lstm = config.lstm_layers
+        #self.num_hidden_lstm = config.lstm_hidden
+
         self.sequence_len = config.sequence_len # Length of input sequence. 
         self.num_features = config.num_features
 
         self.optimizer = OmegaConf.load(hydra.utils.to_absolute_path(config.optimizer))
 
         # The config.expert calls on function TemporalConvNet from temporal_convolution file.
-        self.shared_bottom = hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert))) # (the shared bottom consists of only one expert).
-        output_features = self.shared_bottom.num_channels[-1] # Final channel of tcn. (size)
+        self.shared_bottom = hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert)))
+        self.tcn_output_size = self.shared_bottom.num_channels[-1]*self.sequence_len
+        #self.expert_kernels_lstm = nn.LSTM(self.tcn_output_size,self.num_hidden_lstm,self.num_layers_lstm)
 
-        # Now we can define our towers, which essentialy are just feed forward neural networks:
-        self.towers_list = nn.ModuleList([nn.Linear(self.sequence_len*output_features, self.num_units) for _ in range(self.num_tasks)])
-        # Which feeds into the output list:
+        self.input_list = nn.ModuleList([nn.Linear(self.tcn_output_size, self.num_units) for _ in range(self.num_tasks)])
+        self.towers_list = nn.ModuleList(nn.Linear(self.num_units, self.num_units) for _ in range(self.num_tasks))
         self.output_list = nn.ModuleList([nn.Linear(self.num_units, 1) for _ in range(self.num_tasks)])
+
+
         # Now we want to define the metrics, which are used to evaluate the performance of our model:
         self.loss_fn = nn.MSELoss()
         self.loss_fn_spikes = nn.BCEWithLogitsLoss()
@@ -49,14 +51,16 @@ class MH(pl.LightningModule):
         self.test_metric_spike = torchmetrics.Accuracy()
 
     def forward(self, inputs, diversity = False):
-        """ This is the function were we generate our output from all the different tasks. """ 
+        """ This is the function were we generate our output from all the different tasks. """   
         shared_bottom_outputs = self.calculating_shared_bottom(inputs)
-
+        if torch.sum(torch.isnan(shared_bottom_outputs)):
+            print('found nanz')
         output = []
         for task in range(self.num_tasks):
-    
-            aux = self.towers_list[task](shared_bottom_outputs)
-
+            aux = self.input_list[task](shared_bottom_outputs)
+            aux = F.elu(aux)
+            aux = self.towers_list[task](aux)
+            aux = F.elu(aux)
             aux = self.output_list[task](aux)
             output.append(aux) # Here we append the output corresponding to each specific task.
 
@@ -68,6 +72,7 @@ class MH(pl.LightningModule):
         """ Calculating the shared bottom, where the activation function is ReLU."""
 
         aux = self.shared_bottom(inputs) # Here we collect the list consisting of the shared bottom kernel.
+        aux = self.expert_kernels_lstm(aux)[0]
         shared_bottom_outputs = F.relu(aux,inplace=False) # Perform the relu activation function on the reshaped output.
 
         return shared_bottom_outputs
@@ -82,7 +87,7 @@ class MH(pl.LightningModule):
 
     def training_step_end(self, outputs):
         self.training_metric(outputs['predictions'], outputs['targets'])
-        self.training_metric_spike(F.sigmoid(outputs['predictions_spike']).int(),F.sigmoid(outputs['targets_spike']).int())
+        self.training_metric_spike(F.softmax(outputs['predictions_spike']).int(),outputs['targets_spike'].int())
         self.log('loss/train', outputs['loss'])
         self.log('metric/train', self.training_metric)
         self.log('metric/train/spike', self.training_metric_spike)
@@ -98,13 +103,13 @@ class MH(pl.LightningModule):
 
     def validation_step_end(self, outputs):
         self.validation_metric(outputs['predictions'], outputs['targets'])
-        self.validation_metric_spike(F.sigmoid(outputs['predictions_spike']).int(),F.sigmoid(outputs['targets_spike']).int())
+        self.validation_metric_spike(F.softmax(outputs['predictions_spike']).int(),outputs['targets_spike'].int())
         self.log('loss/val', outputs['loss'])
         self.log('metric/val', self.validation_metric)
         self.log('metric/val/spike',self.validation_metric_spike)
 
     def test_step(self, batch, batch_idx):
-        data, targets = batch
+        data, targets = batch['data'], batch['target']
 
         with torch.no_grad():
             predictions = self(data)
@@ -116,7 +121,7 @@ class MH(pl.LightningModule):
 
     def test_step_end(self, outputs):
         self.test_metric(outputs['predictions'], outputs['targets'])
-        self.test_metric_spike(F.sigmoid(outputs['predictions_spike']).int(),F.sigmoid(outputs['targets_spike']).int())
+        self.validation_metric_spike(F.softmax(outputs['predictions_spike']).int(),outputs['targets_spike'].int())
         self.log('loss/test', outputs['loss'])
         self.log('metric/test', self.test_metric)
         self.log('metric/test/spike',self.test_metric_spike)
@@ -134,8 +139,8 @@ class MMoE(pl.LightningModule):
         self.save_hyperparameters()
         self.num_tasks = config.num_tasks
         self.num_experts = config.num_experts
-        self.num_layers = config.num_layers
         self.num_units = config.num_units
+        #self.num_layers_lstm = config.lstm_layers
 
         self.sequence_len = config.sequence_len
         self.num_features =  config.num_features
@@ -144,17 +149,19 @@ class MMoE(pl.LightningModule):
         self.use_gate_bias = config.use_gate_bias
         self.optimizer = OmegaConf.load(hydra.utils.to_absolute_path(config.optimizer))
 
-        self.expert_kernels = nn.ModuleList([hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert))) for _ in range(self.num_experts)])
+        self.expert_kernels_tcn = nn.ModuleList([hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert))) for _ in range(self.num_experts)])
+        self.tcn_output_size = self.expert_kernels_tcn[0].num_channels[-1]*self.sequence_len
+        #self.expert_kernels_lstm = nn.ModuleList([nn.LSTM(self.tcn_output_size,self.tcn_output_size,self.num_layers_lstm)  for _ in range(self.num_experts)])
+        self.compressor = hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert)))
 
-        output_features = self.expert_kernels[0].num_channels[-1]
-
-        self.towers_list = nn.ModuleList([nn.Linear(self.sequence_len*output_features, self.num_units) for _ in range(self.num_tasks)])
+        self.input_list = nn.ModuleList([nn.Linear(self.tcn_output_size, self.num_units) for _ in range(self.num_tasks)])
+        self.towers_list = nn.ModuleList(nn.Linear(self.num_units, self.num_units) for _ in range(self.num_tasks))
         self.output_list = nn.ModuleList([nn.Linear(self.num_units, 1) for _ in range(self.num_tasks)])
 
         if self.use_expert_bias:
-            self.expert_bias = nn.Parameter(torch.zeros(self.num_experts, output_features*self.sequence_len), requires_grad=True)
+            self.expert_bias = nn.Parameter(torch.zeros(self.num_experts, self.tcn_output_size), requires_grad=True)
 
-        gate_kernels = torch.rand((self.num_tasks, self.sequence_len * self.num_features, self.num_experts)).float()
+        gate_kernels = torch.rand((self.num_tasks, self.tcn_output_size, self.num_experts)).float()
         self.gate_kernels = nn.Parameter(gate_kernels, requires_grad=True)
 
         if self.use_gate_bias:
@@ -174,20 +181,20 @@ class MMoE(pl.LightningModule):
 
     def forward(self, inputs, diversity=False):
         batch_size = inputs.shape[0]
-        print('hi')
-
         expert_outputs = self.calculating_experts(inputs)
         gate_outputs = self.calculating_gates(inputs, batch_size)
         product_outputs = self.multiplying_gates_and_experts(expert_outputs, gate_outputs)
 
         output = []
         for task in range(self.num_tasks):
-            aux = self.towers_list[task](product_outputs[task,:,:])
+            aux = self.input_list[task](product_outputs[task,:,:])
+            aux = F.elu(aux)
+            aux = self.towers_list[task](aux)
+            aux = F.elu(aux)
             aux = self.output_list[task](aux)
             output.append(aux)
 
         output = torch.cat([x.float() for x in output], dim=1)
-
         if diversity:
             return output, expert_outputs
         else:
@@ -195,11 +202,12 @@ class MMoE(pl.LightningModule):
 
     def calculating_experts(self, inputs):
         """
-        Calculating the experts, f_{i}(x) = activation(W_{i} * x + b), where activation is ReLU according to the paper (E x n x U)
+        Calculating the experts
         """
 
         for i in range(self.num_experts):
-            aux = self.expert_kernels[i](inputs)
+            aux = self.expert_kernels_tcn[i](inputs)
+            #aux = self.expert_kernels_lstm[i](expert_outputs)[0]
             if i == 0:
                 expert_outputs = aux.reshape(1, aux.shape[0], aux.shape[1])
             else:
@@ -216,14 +224,13 @@ class MMoE(pl.LightningModule):
         """
         Calculating the gates, g^{k}(x) = activation(W_{gk} * x + b), where activation is softmax according to the paper T x n x E
         """
-
-        inputs = inputs.reshape((inputs.shape[0], inputs.shape[1] * inputs.shape[2]))
-
+        compressed_inputs = self.compressor(inputs)
+        
         for index in range(self.num_tasks):
             if index == 0:
-                gate_outputs = torch.mm(inputs, self.gate_kernels[index]).reshape(1, batch_size, self.num_experts)
+                gate_outputs = torch.mm(compressed_inputs, self.gate_kernels[index]).reshape(1, batch_size, self.num_experts)
             else:
-                gate_outputs = torch.cat((gate_outputs, torch.mm(inputs, self.gate_kernels[index]).reshape(1, batch_size, self.num_experts)), dim=0)
+                gate_outputs = torch.cat((gate_outputs, torch.mm(compressed_inputs, self.gate_kernels[index]).reshape(1, batch_size, self.num_experts)), dim=0)
 
         if self.use_gate_bias:
             gate_outputs = gate_outputs.add(self.gate_bias)
@@ -264,7 +271,7 @@ class MMoE(pl.LightningModule):
 
     def training_step_end(self, outputs):
         self.training_metric(outputs['predictions'], outputs['targets'])
-        self.training_metric_spike(F.sigmoid(outputs['predictions_spike']).int(),F.sigmoid(outputs['targets_spike']).int())
+        self.training_metric_spike(F.softmax(outputs['predictions_spike']).int(),outputs['targets_spike'].int())
         self.log('loss/train', outputs['loss'])
         self.log('metric/train', self.training_metric)
         self.log('metric/train/spike', self.training_metric_spike)
@@ -280,13 +287,13 @@ class MMoE(pl.LightningModule):
 
     def validation_step_end(self, outputs):
         self.validation_metric(outputs['predictions'], outputs['targets'])
-        self.validation_metric_spike(F.sigmoid(outputs['predictions_spike']).int(),F.sigmoid(outputs['targets_spike']).int())
+        self.validation_metric_spike(F.softmax(outputs['predictions_spike']).int(),outputs['targets_spike'].int())
         self.log('loss/val', outputs['loss'])
         self.log('metric/val', self.validation_metric)
         self.log('metric/val/spike',self.validation_metric_spike)
 
     def test_step(self, batch, batch_idx):
-        data, targets = batch
+        data, targets = batch['data'], batch['target']
 
         with torch.no_grad():
             predictions = self(data)
@@ -298,7 +305,7 @@ class MMoE(pl.LightningModule):
 
     def test_step_end(self, outputs):
         self.test_metric(outputs['predictions'], outputs['targets'])
-        self.test_metric_spike(F.sigmoid(outputs['predictions_spike']).int(),F.sigmoid(outputs['targets_spike']).int())
+        self.test_metric_spike(F.softmax(outputs['predictions_spike']).int(),outputs['targets_spike'].int())
         self.log('loss/test', outputs['loss'])
         self.log('metric/test', self.test_metric)
         self.log('metric/test/spike',self.test_metric_spike)

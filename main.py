@@ -4,6 +4,7 @@ import pytorch_lightning as pl
 from omegaconf import DictConfig, OmegaConf
 logger = logging.getLogger(__name__)
 import torch
+torch.cuda.empty_cache()
 
 
 @hydra.main(config_path="configs", config_name="defaults")
@@ -18,10 +19,11 @@ def main(config: DictConfig) -> None:
 
     # Let hydra manage direcotry outputs
     tensorboard = pl.loggers.TensorBoardLogger(".", "", "", log_graph=True, default_hp_metric=False)
-    callbacks = [pl.callbacks.ModelCheckpoint(monitor='loss/val'), pl.callbacks.EarlyStopping(monitor='loss/val', patience=100)]
+    checkpoint_callback = pl.callbacks.ModelCheckpoint(save_top_k=2, monitor="loss/val", mode="min", filename="sample-mh-{epoch:02d}-{val_loss:.2f}",)
+    early_stopping_callback = pl.callbacks.EarlyStopping(monitor='loss/val', patience=500)
+    callbacks = [checkpoint_callback, early_stopping_callback]
 
-    trainer = pl.Trainer(**OmegaConf.to_container(config.trainer),  logger=tensorboard, callbacks=callbacks)#, accelerator='gpu', devices=1, precision=16)
-
+    trainer = pl.Trainer(**OmegaConf.to_container(config.trainer),  logger=tensorboard, callbacks=callbacks, auto_lr_find=True, precision=16, accelerator='gpu', devices=4, strategy="ddp")
     trainer.fit(model, datamodule=data_module) 
     trainer.test(model, datamodule=data_module)  # Optional
 

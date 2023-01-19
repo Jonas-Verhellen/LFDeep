@@ -5,6 +5,9 @@ config:
   sequence_len: 100
   in_path: /scratch/users/sebasam/input_data_new.npy
   target_path: /scratch/users/sebasam/output_data_new.npy
+  # So now I need to use the new data: (Ask kosio to send me this new data)
+  #in_path: /scratch/users/constb/Data/input_data_voltage_standard.npy
+  #target_path: /scratch/users/constb/Data/output_data_voltage_standard.npy
   batch_size: 32
   num_workers: 32
 

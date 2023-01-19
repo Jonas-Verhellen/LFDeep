@@ -26,17 +26,17 @@ class TemporalBlock(pl.LightningModule):
         super(TemporalBlock, self).__init__()
         self.conv1 = weight_norm(nn.Conv1d(n_inputs, n_outputs, kernel_size, stride=stride, padding=padding, dilation=dilation))
         self.chomp1 = Chomp1d(padding)
-        self.relu1 = nn.ReLU()
+        self.relu1 = nn.Sigmoid()
         self.dropout1 = nn.Dropout(dropout)
 
         self.conv2 = weight_norm(nn.Conv1d(n_outputs, n_outputs, kernel_size, stride=stride, padding=padding, dilation=dilation))
         self.chomp2 = Chomp1d(padding)
-        self.relu2 = nn.ReLU()
+        self.relu2 = nn.Sigmoid()
         self.dropout2 = nn.Dropout(dropout)
 
         self.net = nn.Sequential(self.conv1, self.chomp1, self.relu1, self.dropout1, self.conv2, self.chomp2, self.relu2, self.dropout2)
         self.downsample = nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
-        self.relu = nn.ReLU()
+        self.relu = nn.Sigmoid()
         self.init_weights()
 
     def init_weights(self):
@@ -48,7 +48,7 @@ class TemporalBlock(pl.LightningModule):
             self.downsample.weight.data.normal_(0, 0.01)
 
     def forward(self, x):
-        '''Here we pass through out network and compute our output. '''
+        '''Here we pass through our network and compute our output. '''
 
         out = self.net(x)
         res = x if self.downsample is None else self.downsample(x) # If the input does not have the same number of elements as output --> downsample.
