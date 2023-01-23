@@ -12,6 +12,8 @@ from omegaconf import OmegaConf
 import numpy as np
 from random import randint
 
+#module = __import__("task_balancing")
+#my_class = getattr(module, "TaskBalanceMTL")
 
 class MH(pl.LightningModule):
     '''This is the Multi task Hard- parameter sharing model. For this model we only use one convolutional expert, defined as the shared bottom. This means that
@@ -40,7 +42,12 @@ class MH(pl.LightningModule):
 
 
         # Now we want to define the metrics, which are used to evaluate the performance of our model:
-        self.loss_fn = nn.MSELoss()
+        self.loss_fn = nn.MSELoss() 
+        """ Comment: We want to create our own loss function which computes the loss for each compartment and loop over all the tasks where
+        we adjust the loss with params[lambda]"""
+
+
+
         self.loss_fn_spikes = nn.BCEWithLogitsLoss()
 
         self.training_metric =  torchmetrics.MeanSquaredError()
@@ -49,6 +56,9 @@ class MH(pl.LightningModule):
         self.validation_metric_spike = torchmetrics.Accuracy()
         self.test_metric =  torchmetrics.MeanSquaredError()
         self.test_metric_spike = torchmetrics.Accuracy()
+
+        # Here we add an optional balancing method which we use the adjust the losses of the different tasks. 
+        self.balancer = hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.balancer)))
 
     def forward(self, inputs, diversity = False):
         """ This is the function were we generate our output from all the different tasks. """   
@@ -81,8 +91,12 @@ class MH(pl.LightningModule):
         data, targets = batch['data'], batch['target']
         predictions = self(data)
         predictions_spike, targets_spike = predictions[:,639], targets[:,639,-1]
+        # Want to replace next line with new predicttions where we incorporate our own loss function. 
         predictions, targets = torch.cat([predictions[:,:639],predictions[:,640,None]],1), torch.cat([targets[:,:639,-1],targets[:,640,-1,None]],1)
-        loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
+        loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike) # Do this after looping over the num_tasks.
+        print('---------------')
+        print(predictions)
+        print('----------------')
         return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
 
     def training_step_end(self, outputs):
@@ -117,7 +131,6 @@ class MH(pl.LightningModule):
             predictions, targets = torch.cat([predictions[:,:639],predictions[:,640,None]],1), torch.cat([targets[:,:639,-1],targets[:,640,-1,None]],1)
             loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
         return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
-
 
     def test_step_end(self, outputs):
         self.test_metric(outputs['predictions'], outputs['targets'])
