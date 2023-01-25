@@ -60,6 +60,40 @@ class MH(pl.LightningModule):
         # Here we add an optional balancing method which we use the adjust the losses of the different tasks. 
         self.balancer = hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.balancer)))
 
+    def loss_function(self, predictions, predictions_spike, targets, targets_spike):
+        """Here we want to create our own loss function which should calculate the loss for each compartment
+        I want to incorporate the MSE loss function.
+        (The dimensions of the predictions tensor is (batch_size, num_tasks)"""
+        
+        with torch.no_grad():
+            predictions_numpy = predictions.numpy() # Convert the tensor to numpy. (Look into transition from gpu to cpu here)
+            predictions_spike_numpy = predictions_spike.numpy()
+            targets_numpy = targets.numpy()
+            targets_spike_numpy = targets_spike.numpy()
+
+            lamb = np.repeat(1, predictions_numpy.shape[1]) # This is the initial lambda array. 
+            #lamb = np.resize(lamb, (predictions_numpy.shape)) # Add the batch dimension. 
+            #print(predictions_numpy.shape[0]) # Batch length.
+            #print(predictions_numpy.shape[1]) # Task length. 
+            task_losses = np.zeros(self.num_tasks)
+            for task in range(self.num_tasks-1):
+                diff_squared = (predictions_numpy[:, task] - targets_numpy[:, task]) ** 2
+                loss = diff_squared.mean()
+
+                task_losses[task] = loss * lamb[task] # Have to calculate the loss for each task.
+            # For the spike case:
+                diff_squared_spike = (predictions_spike_numpy - targets_spike_numpy)**2
+                loss_spike = diff_squared_spike.mean()
+                task_losses[-1] = loss_spike * lamb[-1]
+            print(task_losses)
+
+                
+                    
+            # (32, 640)
+            exit()
+            
+
+
     def forward(self, inputs, diversity = False):
         """ This is the function were we generate our output from all the different tasks. """   
         shared_bottom_outputs = self.calculating_shared_bottom(inputs)
@@ -94,9 +128,6 @@ class MH(pl.LightningModule):
         # Want to replace next line with new predicttions where we incorporate our own loss function. 
         predictions, targets = torch.cat([predictions[:,:639],predictions[:,640,None]],1), torch.cat([targets[:,:639,-1],targets[:,640,-1,None]],1)
         loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike) # Do this after looping over the num_tasks.
-        print('---------------')
-        print(predictions)
-        print('----------------')
         return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
 
     def training_step_end(self, outputs):
@@ -112,6 +143,9 @@ class MH(pl.LightningModule):
             predictions = self(data)
             predictions_spike, targets_spike = predictions[:,639], targets[:,639,-1]
             predictions, targets = torch.cat([predictions[:,:639],predictions[:,640,None]],1), torch.cat([targets[:,:639,-1],targets[:,640,-1,None]],1)
+
+            values = self.loss_function(predictions, predictions_spike, targets, targets_spike) # Here we gather the balanced loss for each compartment. 
+
             loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
         return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
 
