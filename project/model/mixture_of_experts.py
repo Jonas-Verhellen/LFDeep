@@ -57,18 +57,20 @@ class MH(pl.LightningModule):
 
     def loss_function(self, predictions, predictions_spike, targets, targets_spike):
         """Here we want to create our own loss function which should calculate the loss for each compartment
-        I want to incorporate the MSE loss function.
+        I want to incorporate the MSE loss function. Here we will also be adding a balancer method (LBTW). 
         (The dimensions of the predictions tensor is (batch_size, num_tasks)"""
         
         with torch.no_grad(): 
             # First we want to go from pytorch tensors to numpy arrays:
-            predictions_numpy = predictions.numpy() # Convert the tensor to numpy. (Look into transition from gpu to cpu here)
-            predictions_spike_numpy = predictions_spike.numpy()
-            targets_numpy = targets.numpy()
-            targets_spike_numpy = targets_spike.numpy()
+            predictions_numpy = predictions # Convert the tensor to numpy. (Look into transition from gpu to cpu here)
+            predictions_spike_numpy = predictions_spike
+            targets_numpy = targets
+            targets_spike_numpy = targets_spike
 
-            lamb = np.repeat(1, predictions_numpy.shape[1]) # This is the initial lambda array. 
-            task_losses = np.zeros(self.num_tasks) # Here we will store our task loss values. 
+            lamb = torch.ones(self.num_tasks) # This is the initial lambda array. 
+           
+            task_losses = torch.zeros(self.num_tasks) # Here we will store our task loss values. 
+            
             for batch in range(predictions_numpy.shape[0]):
                 for task in range(self.num_tasks-1):
                     diff_squared = (predictions_numpy[batch, task] - targets_numpy[batch, task]) ** 2
@@ -79,7 +81,6 @@ class MH(pl.LightningModule):
                     diff_squared_spike = (predictions_spike_numpy - targets_spike_numpy)**2
                     loss_spike = diff_squared_spike.mean()
                     task_losses[-1] = loss_spike * lamb[-1]
-                    # So the task losses is given in an array: [1, 4, 3, 8, 6,.......,9, 5, 7, 2]
 
                     if batch == 0: # First batch:
                         self.balancer.get_initial_loss(task_losses[task], task)
