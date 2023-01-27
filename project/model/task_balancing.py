@@ -29,9 +29,9 @@ class TaskBalanceMTL:
         self.T = config.n_tasks
         self.alpha_balance = config.alpha_balance
         self.n_tasks = config.n_tasks
-        self.task_ratios = np.zeros([self.n_tasks], dtype=np.float32)
-        self.task_weights = np.zeros([self.n_tasks], dtype=np.float32)
-        self.initial_losses = np.zeros([self.n_tasks], dtype=np.float32)
+        self.task_ratios = torch.zeros([self.n_tasks])
+        self.task_weights = torch.ones([self.n_tasks])
+        self.initial_losses = torch.zeros([self.n_tasks])
         self.weight_history = []
         self.history_last = []
         for i in range(self.n_tasks):
@@ -71,7 +71,7 @@ class TaskBalanceMTL:
     def sum_losses_tasks(self):
         ratios_sum = 0.0
         for i in range(0, self.n_tasks):
-            ratios_sum += np.exp(self.task_ratios[i] / self.T)
+            ratios_sum += torch.exp(self.task_ratios[i] / self.T)
         return ratios_sum
 
     def DWA(self, task_losses, epoch):
@@ -80,7 +80,7 @@ class TaskBalanceMTL:
 
         for i in range(0, self.n_tasks):
             self.task_weights[i] = max(
-                min((self.K * np.exp(self.task_ratios[i] / self.T)) / ratios_sum, 1.5),
+                min((self.K * torch.exp(self.task_ratios[i] / self.T)) / ratios_sum, 1.5),
                 0.5,
             )
 
