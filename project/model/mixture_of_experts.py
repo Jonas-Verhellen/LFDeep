@@ -173,11 +173,11 @@ class MMoE(pl.LightningModule):
         self.loss_fn_spikes = nn.BCEWithLogitsLoss()
 
         self.training_metric =  torchmetrics.MeanSquaredError()
-        self.training_metric_spike = torchmetrics.Accuracy()
+        self.training_metric_spike = torchmetrics.Accuracy(task = 'binary')
         self.validation_metric = torchmetrics.MeanSquaredError()
-        self.validation_metric_spike = torchmetrics.Accuracy()
+        self.validation_metric_spike = torchmetrics.Accuracy(task = 'binary')
         self.test_metric =  torchmetrics.MeanSquaredError()
-        self.test_metric_spike = torchmetrics.Accuracy()
+        self.test_metric_spike = torchmetrics.Accuracy(task = 'binary')
 
     def forward(self, inputs, diversity=False):
         batch_size = inputs.shape[0]
