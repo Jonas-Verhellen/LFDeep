@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__) # Used to track what is happening in the pr
 class SpikeDataset(Dataset):
     def __init__(self,in_path,target_path):
         super().__init__()
-        self.spike_data = np.load(in_path,mmap_mode='r+')
-        self.target_data = np.load(target_path, mmap_mode='r+')[:,:,None]
+        self.spike_data = np.load(in_path,mmap_mode='r')
+        self.target_data = np.load(target_path, mmap_mode='r')[:,:,None]
 
     def __len__(self):
         return len(self.spike_data)
