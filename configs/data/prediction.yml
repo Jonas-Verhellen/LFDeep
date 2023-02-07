@@ -1,0 +1,10 @@
+_target_: project.data.spike.SpikeDataModule
+
+config:
+  sequence_len: 100
+  in_path: input_data_voltage_standard_small.npy
+  target_path: output_data_voltage_standard.npy
+  batch_size: 32
+  num_workers: 1
+
+
