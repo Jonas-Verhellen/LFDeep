@@ -72,7 +72,7 @@ class MH(pl.LightningModule):
         """ Calculating the shared bottom, where the activation function is ReLU."""
 
         aux = self.shared_bottom(inputs) # Here we collect the list consisting of the shared bottom kernel.
-        aux = self.expert_kernels_lstm(aux)[0]
+        # aux = self.expert_kernels_lstm(aux)[0]
         shared_bottom_outputs = F.relu(aux,inplace=False) # Perform the relu activation function on the reshaped output.
 
         return shared_bottom_outputs
