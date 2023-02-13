@@ -44,11 +44,11 @@ class MH(pl.LightningModule):
         self.loss_fn_spikes = nn.BCEWithLogitsLoss()
 
         self.training_metric =  torchmetrics.MeanSquaredError()
-        self.training_metric_spike = torchmetrics.Accuracy()
+        self.training_metric_spike = torchmetrics.Accuracy()#task='binary')
         self.validation_metric = torchmetrics.MeanSquaredError()
-        self.validation_metric_spike = torchmetrics.Accuracy()
+        self.validation_metric_spike = torchmetrics.Accuracy()#task='binary')
         self.test_metric =  torchmetrics.MeanSquaredError()
-        self.test_metric_spike = torchmetrics.Accuracy()
+        self.test_metric_spike = torchmetrics.Accuracy()#task='binary')
 
     def forward(self, inputs, diversity = False):
         """ This is the function were we generate our output from all the different tasks. """   
@@ -72,7 +72,7 @@ class MH(pl.LightningModule):
         """ Calculating the shared bottom, where the activation function is ReLU."""
 
         aux = self.shared_bottom(inputs) # Here we collect the list consisting of the shared bottom kernel.
-        aux = self.expert_kernels_lstm(aux)[0]
+        #aux = self.expert_kernels_lstm(aux)[0]
         shared_bottom_outputs = F.relu(aux,inplace=False) # Perform the relu activation function on the reshaped output.
 
         return shared_bottom_outputs
@@ -173,11 +173,11 @@ class MMoE(pl.LightningModule):
         self.loss_fn_spikes = nn.BCEWithLogitsLoss()
 
         self.training_metric =  torchmetrics.MeanSquaredError()
-        self.training_metric_spike = torchmetrics.Accuracy()
+        self.training_metric_spike = torchmetrics.Accuracy()#task='binary')
         self.validation_metric = torchmetrics.MeanSquaredError()
-        self.validation_metric_spike = torchmetrics.Accuracy()
+        self.validation_metric_spike = torchmetrics.Accuracy()#task='binary')
         self.test_metric =  torchmetrics.MeanSquaredError()
-        self.test_metric_spike = torchmetrics.Accuracy()
+        self.test_metric_spike = torchmetrics.Accuracy()#task='binary')
 
     def forward(self, inputs, diversity=False):
         batch_size = inputs.shape[0]
@@ -260,6 +260,15 @@ class MMoE(pl.LightningModule):
                 final_products = torch.cat((final_products, final_product.reshape(1, final_product.shape[0], final_product.shape[1])), dim=0)
         return final_products
 
+    def compute_diversity(self, batch):
+        import project.utils.diversity_metrics as dm
+        batch = torch.reshape(batch,[batch.shape[0],batch.shape[1]*batch.shape[2]])
+        diversity_matrix = dm.diversity_matrix(batch.T)
+        diversity_score = torch.mean(diversity_matrix)
+        diversity_determinant = torch.linalg.det(diversity_matrix)
+        diversity_permanent = dm.permanent(diversity_matrix)
+        return diversity_score, diversity_determinant, diversity_permanent
+
     def training_step(self, batch, batch_idx):
         data, targets = batch['data'], batch['target']
         predictions = self(data)
@@ -283,14 +292,19 @@ class MMoE(pl.LightningModule):
             predictions_spike, targets_spike = predictions[:,639], targets[:,639,-1]
             predictions, targets = torch.cat([predictions[:,:639],predictions[:,640,None]],1), torch.cat([targets[:,:639,-1],targets[:,640,-1,None]],1)
             loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
-        return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
+        return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike, 'current_batch': data}
 
     def validation_step_end(self, outputs):
+        expert_output = self.calculating_experts(outputs['current_batch'])
+        diversity_score, diversity_determinant, diversity_permanent = self.compute_diversity(expert_output)
         self.validation_metric(outputs['predictions'], outputs['targets'])
         self.validation_metric_spike(F.softmax(outputs['predictions_spike']).int(),outputs['targets_spike'].int())
         self.log('loss/val', outputs['loss'])
         self.log('metric/val', self.validation_metric)
         self.log('metric/val/spike',self.validation_metric_spike)
+        self.log('diversity/val/score', diversity_score)
+        self.log('diversity/val/determinant',diversity_determinant)
+        self.log('diversity/val/permanent',diversity_permanent)
 
     def test_step(self, batch, batch_idx):
         data, targets = batch['data'], batch['target']
@@ -329,8 +343,8 @@ class MMoEEx(MMoE):
             exclusivity[e] = randint(0, self.num_tasks)
 
         self.exclusivity = exclusivity
-        gate_kernels = torch.rand((self.num_tasks, self.sequence_len * self.num_features, self.num_experts)).float()
-
+        gate_kernels = torch.rand((self.num_tasks, self.tcn_output_size, self.num_experts)).float()
+        
         for expert_number, task_number in enumerate(self.exclusivity):
             if task_number < self.num_tasks + 1:
                 if self.type == "exclusivity":
