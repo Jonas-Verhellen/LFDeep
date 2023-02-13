@@ -329,7 +329,7 @@ class MMoEEx(MMoE):
             exclusivity[e] = randint(0, self.num_tasks)
 
         self.exclusivity = exclusivity
-        gate_kernels = torch.rand((self.num_tasks, self.sequence_len * self.num_features, self.num_experts)).float()
+        gate_kernels = torch.rand((self.num_tasks, self.tcn_output_size, self.num_experts)).float()
 
         for expert_number, task_number in enumerate(self.exclusivity):
             if task_number < self.num_tasks + 1:
