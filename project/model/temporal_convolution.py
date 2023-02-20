@@ -26,17 +26,17 @@ class TemporalBlock(pl.LightningModule):
         super(TemporalBlock, self).__init__()
         self.conv1 = weight_norm(nn.Conv1d(n_inputs, n_outputs, kernel_size, stride=stride, padding=padding, dilation=dilation))
         self.chomp1 = Chomp1d(padding)
-        self.relu1 = nn.Sigmoid()
+        self.sigmoid1 = nn.Sigmoid()
         self.dropout1 = nn.Dropout(dropout)
 
         self.conv2 = weight_norm(nn.Conv1d(n_outputs, n_outputs, kernel_size, stride=stride, padding=padding, dilation=dilation))
         self.chomp2 = Chomp1d(padding)
-        self.relu2 = nn.Sigmoid()
+        self.sigmoid2 = nn.Sigmoid()
         self.dropout2 = nn.Dropout(dropout)
 
-        self.net = nn.Sequential(self.conv1, self.chomp1, self.relu1, self.dropout1, self.conv2, self.chomp2, self.relu2, self.dropout2)
+        self.net = nn.Sequential(self.conv1, self.chomp1, self.sigmoid1, self.dropout1, self.conv2, self.chomp2, self.sigmoid2, self.dropout2)
         self.downsample = nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
-        self.relu = nn.Sigmoid()
+        self.sigmoid = nn.Sigmoid()
         self.init_weights()
 
     def init_weights(self):
@@ -52,7 +52,7 @@ class TemporalBlock(pl.LightningModule):
 
         out = self.net(x)
         res = x if self.downsample is None else self.downsample(x) # If the input does not have the same number of elements as output --> downsample.
-        return self.relu(out + res) # We add the input to the output.
+        return self.sigmoid(out + res) # We add the input to the output.
 
 class TemporalConvNet(pl.LightningModule):
     '''Here we create our full temporal convolutional neural network. (Here the config file will include all the initilaization parameters).'''

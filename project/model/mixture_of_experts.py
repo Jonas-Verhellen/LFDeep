@@ -20,7 +20,7 @@ class MH(pl.LightningModule):
     all of the tasks will use this shared bottom before the data is sent into the towers. '''
     def __init__(self, config):
         super(MH, self).__init__()
-        self.save_hyperparameters()
+        #self.save_hyperparameters()
         self.num_tasks = config.num_tasks # This decides how many feed forward neural networks we are going to feed our data to.
         self.num_units = config.num_units # Number of neurons in the hidden layer of the towers.
         #self.num_layers_lstm = config.lstm_layers
@@ -59,8 +59,7 @@ class MH(pl.LightningModule):
         """Here we want to create our own loss function which should calculate the loss for each compartment
         I want to incorporate the MSE loss function. Here we will also be adding a balancer method (LBTW). 
         (The dimensions of the predictions tensor is (batch_size, num_tasks)"""
-        
-        #with torch.no_grad(): 
+         
         # First we want to go from pytorch tensors to numpy arrays:
         predictions_numpy = predictions # Convert the tensor to numpy. (Look into transition from gpu to cpu here)
         predictions_spike_numpy = predictions_spike
@@ -80,13 +79,12 @@ class MH(pl.LightningModule):
                     # For the spike case: change to cross entropy.
                     #diff_squared_spike = (predictions_spike_numpy - targets_spike_numpy)**2
                     
-                    
                     if batch == 0: # First batch:
                         self.balancer.get_initial_loss(task_losses[task], task)
 
                     self.balancer.LBTW(task_losses[task], task)
 
-                loss_spike = self.loss_fn(predictions_spike_numpy[batch], targets_spike_numpy[batch])
+                loss_spike = self.loss_fn_spikes(predictions_spike_numpy[batch], targets_spike_numpy[batch])
                 task_losses[-1] = loss_spike * lamb[-1]
                 self.balancer.LBTW(task_losses[-1], self.num_tasks-1)
                     
@@ -94,9 +92,22 @@ class MH(pl.LightningModule):
 
                 lamb = weights
 
+        if (task_losses != task_losses).any():
+            raise ValueError("Loss contains NaN values")
+        if torch.isinf(task_losses).any():
+            raise ValueError("Loss contains infinite values")
+
         weights = weights.to(device="cuda")
-        total_loss = self.loss_fn(predictions*weights[:-1], targets*weights[:-1]) + self.loss_fn(predictions_spike*lamb[-1],targets_spike*lamb[-1]) 
-        
+        task_losses = task_losses.to(device="cuda")
+        task_losses.requires_grad=True
+        mse_loss = torch.mean( nn.MSELoss(reduce = False)(predictions_numpy, targets_numpy), axis=0 )
+
+        total_loss = ( mse_loss@weights[:-1] / len(weights[:-1]) ) + self.loss_fn_spikes(predictions_spike,targets_spike) * weights[-1] 
+        #total_loss = torch.mean(task_losses) #+ self.loss_fn_spikes(predictions_spike,targets_spike) * weights[-1] 
+        #total_loss.requires_grad=True
+        #if torch.sum(torch.isnan(total_loss)):
+        #    print('found nanz')
+        total_loss = total_loss.to(device="cuda")
         return total_loss
                 
     def forward(self, inputs, diversity = False):
@@ -133,11 +144,15 @@ class MH(pl.LightningModule):
         # Want to replace next line with new predicttions where we incorporate our own loss function. 
         predictions, targets = torch.cat([predictions[:,:639],predictions[:,640,None]],1), torch.cat([targets[:,:639,-1],targets[:,640,-1,None]],1)
         loss = self.balanced_loss_function(predictions, predictions_spike, targets, targets_spike) # Here we gather the balanced loss for each compartment. 
+        #loss_2 = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
+        #print(loss_2)
+        #self.log("loss", loss) 
         return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
 
     def training_step_end(self, outputs):
         self.training_metric(outputs['predictions'], outputs['targets'])
         self.training_metric_spike(F.softmax(outputs['predictions_spike']).int(),outputs['targets_spike'].int())
+        #print(outputs['loss'])
         self.log('loss/train', outputs['loss'])
         self.log('metric/train', self.training_metric)
         self.log('metric/train/spike', self.training_metric_spike)

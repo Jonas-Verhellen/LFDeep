@@ -23,7 +23,7 @@ def main(config: DictConfig) -> None:
     early_stopping_callback = pl.callbacks.EarlyStopping(monitor='loss/val', patience=500)
     callbacks = [checkpoint_callback, early_stopping_callback]
 
-    trainer = pl.Trainer(**OmegaConf.to_container(config.trainer),  logger=tensorboard, callbacks=callbacks, auto_lr_find=True, precision=16, accelerator='gpu', devices=1, strategy="ddp")
+    trainer = pl.Trainer(**OmegaConf.to_container(config.trainer),  logger=tensorboard, callbacks=callbacks, auto_lr_find=True, precision=16, accelerator='gpu', devices=4, strategy="ddp")
     trainer.fit(model, datamodule=data_module) 
     trainer.test(model, datamodule=data_module)  # Optional
 

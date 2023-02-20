@@ -7,5 +7,5 @@ config:
   balance_method: "Sum"
   K: 4
   T: 4
-  alpha_balance: 0.5
-
+  alpha_balance: 0.5 #alpha_balance: 0.5 # So this is a tuning parameter for the task balancing, which determines the balance between the different tasks. 
+# alpha_balance is often defined by 1 / num_tasks. 

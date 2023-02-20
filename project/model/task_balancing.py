@@ -30,7 +30,7 @@ class TaskBalanceMTL:
         self.alpha_balance = config.alpha_balance
         self.n_tasks = config.n_tasks
         self.task_ratios = torch.zeros([self.n_tasks])
-        self.task_weights = torch.ones([self.n_tasks])
+        self.task_weights = torch.zeros([self.n_tasks])
         self.initial_losses = torch.zeros([self.n_tasks])
         self.weight_history = []
         self.history_last = []
@@ -85,13 +85,24 @@ class TaskBalanceMTL:
             )
 
     def get_weights(self):
+        #task_weights = task_weights.to(device="cuda")
         return self.task_weights
 
     def get_initial_loss(self, losses, task):
         self.initial_losses[task] = losses
 
     def LBTW(self, batch_losses, task):
-        self.task_weights[task] = max(
-            min(pow(batch_losses / self.initial_losses[task], self.alpha_balance), 1.5),
-            0.5,
+        self.task_weights[task] = torch.fmax(
+            torch.fmin(pow(batch_losses / self.initial_losses[task], torch.Tensor([self.alpha_balance])), torch.Tensor([1.0])),
+            torch.Tensor([0.01]),
         )
+        
+        #if (batch_losses / self.initial_losses[task]) == float('NaN'):
+        #    self.task_weights[task] = 1.0
+        #    print("Found it!")
+        #else:
+        #    self.task_weights[task] = max(
+        #    min(pow(batch_losses / self.initial_losses[task], self.alpha_balance), 1.0),
+        #    0.01,
+        #)
+        
