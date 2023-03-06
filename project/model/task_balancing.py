@@ -97,12 +97,3 @@ class TaskBalanceMTL:
             torch.Tensor([0.01]),
         )
         
-        #if (batch_losses / self.initial_losses[task]) == float('NaN'):
-        #    self.task_weights[task] = 1.0
-        #    print("Found it!")
-        #else:
-        #    self.task_weights[task] = max(
-        #    min(pow(batch_losses / self.initial_losses[task], self.alpha_balance), 1.0),
-        #    0.01,
-        #)
-        

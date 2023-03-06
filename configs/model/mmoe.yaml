@@ -16,3 +16,4 @@ config:
 
   expert: configs/model/tcn.yaml
   optimizer: configs/optim/adam.yaml
+  balancer: configs/model/balancing.yaml

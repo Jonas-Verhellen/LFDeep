@@ -59,32 +59,22 @@ class MH(pl.LightningModule):
         """Here we want to create our own loss function which should calculate the loss for each compartment
         I want to incorporate the MSE loss function. Here we will also be adding a balancer method (LBTW). 
         (The dimensions of the predictions tensor is (batch_size, num_tasks)"""
-         
-        # First we want to go from pytorch tensors to numpy arrays:
-        predictions_numpy = predictions # Convert the tensor to numpy. (Look into transition from gpu to cpu here)
-        predictions_spike_numpy = predictions_spike
-        targets_numpy = targets
-        targets_spike_numpy = targets_spike
 
         lamb = torch.ones(self.num_tasks) # This is the initial lambda array. 
         
         task_losses = torch.zeros(self.num_tasks) # Here we will store our task loss values. 
         with torch.no_grad():
-            for batch in range(predictions_numpy.shape[0]):
+            for batch in range(predictions.shape[0]):
                 for task in range(self.num_tasks-1):
-                    #diff_squared = (predictions_numpy[batch, task] - targets_numpy[batch, task]) ** 2
-                    loss = self.loss_fn(predictions_numpy[batch, task], targets_numpy[batch, task])
-
+                    loss = self.loss_fn(predictions[batch, task], targets[batch, task])
                     task_losses[task] = loss * lamb[task] # Have to calculate the loss for each task.
-                    # For the spike case: change to cross entropy.
-                    #diff_squared_spike = (predictions_spike_numpy - targets_spike_numpy)**2
                     
                     if batch == 0: # First batch:
                         self.balancer.get_initial_loss(task_losses[task], task)
 
                     self.balancer.LBTW(task_losses[task], task)
 
-                loss_spike = self.loss_fn_spikes(predictions_spike_numpy[batch], targets_spike_numpy[batch])
+                loss_spike = self.loss_fn_spikes(predictions_spike[batch], targets_spike[batch])
                 task_losses[-1] = loss_spike * lamb[-1]
                 self.balancer.LBTW(task_losses[-1], self.num_tasks-1)
                     
@@ -100,14 +90,11 @@ class MH(pl.LightningModule):
         weights = weights.to(device="cuda")
         task_losses = task_losses.to(device="cuda")
         task_losses.requires_grad=True
-        mse_loss = torch.mean( nn.MSELoss(reduce = False)(predictions_numpy, targets_numpy), axis=0 )
+        mse_loss = torch.mean( nn.MSELoss(reduce = False)(predictions, targets), axis=0 )
 
         total_loss = ( mse_loss@weights[:-1] / len(weights[:-1]) ) + self.loss_fn_spikes(predictions_spike,targets_spike) * weights[-1] 
-        #total_loss = torch.mean(task_losses) #+ self.loss_fn_spikes(predictions_spike,targets_spike) * weights[-1] 
-        #total_loss.requires_grad=True
-        #if torch.sum(torch.isnan(total_loss)):
-        #    print('found nanz')
         total_loss = total_loss.to(device="cuda")
+
         return total_loss
                 
     def forward(self, inputs, diversity = False):
@@ -144,15 +131,12 @@ class MH(pl.LightningModule):
         # Want to replace next line with new predicttions where we incorporate our own loss function. 
         predictions, targets = torch.cat([predictions[:,:639],predictions[:,640,None]],1), torch.cat([targets[:,:639,-1],targets[:,640,-1,None]],1)
         loss = self.balanced_loss_function(predictions, predictions_spike, targets, targets_spike) # Here we gather the balanced loss for each compartment. 
-        #loss_2 = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
-        #print(loss_2)
-        #self.log("loss", loss) 
+        #loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
         return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
 
     def training_step_end(self, outputs):
         self.training_metric(outputs['predictions'], outputs['targets'])
         self.training_metric_spike(F.softmax(outputs['predictions_spike']).int(),outputs['targets_spike'].int())
-        #print(outputs['loss'])
         self.log('loss/train', outputs['loss'])
         self.log('metric/train', self.training_metric)
         self.log('metric/train/spike', self.training_metric_spike)
@@ -243,6 +227,51 @@ class MMoE(pl.LightningModule):
         self.test_metric =  torchmetrics.MeanSquaredError()
         self.test_metric_spike = torchmetrics.Accuracy()
 
+         # Here we add an optional balancing method which we use the adjust the losses of the different tasks. 
+        self.balancer = hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.balancer)))
+
+    def balanced_loss_function(self, predictions, predictions_spike, targets, targets_spike):
+        """Here we want to create our own loss function which should calculate the loss for each compartment
+        I want to incorporate the MSE loss function. Here we will also be adding a balancer method (LBTW). 
+        (The dimensions of the predictions tensor is (batch_size, num_tasks)"""
+
+        lamb = torch.ones(self.num_tasks) # This is the initial lambda array. 
+        
+        task_losses = torch.zeros(self.num_tasks) # Here we will store our task loss values. 
+        with torch.no_grad():
+            for batch in range(predictions.shape[0]):
+                for task in range(self.num_tasks-1):
+                    loss = self.loss_fn(predictions[batch, task], targets[batch, task])
+                    task_losses[task] = loss * lamb[task] # Have to calculate the loss for each task.
+                    
+                    if batch == 0: # First batch:
+                        self.balancer.get_initial_loss(task_losses[task], task)
+
+                    self.balancer.LBTW(task_losses[task], task)
+
+                loss_spike = self.loss_fn_spikes(predictions_spike[batch], targets_spike[batch])
+                task_losses[-1] = loss_spike * lamb[-1]
+                self.balancer.LBTW(task_losses[-1], self.num_tasks-1)
+                    
+                weights = torch.Tensor(self.balancer.get_weights())
+
+                lamb = weights
+
+        if (task_losses != task_losses).any():
+            raise ValueError("Loss contains NaN values")
+        if torch.isinf(task_losses).any():
+            raise ValueError("Loss contains infinite values")
+
+        weights = weights.to(device="cuda")
+        task_losses = task_losses.to(device="cuda")
+        task_losses.requires_grad=True
+        mse_loss = torch.mean( nn.MSELoss(reduce = False)(predictions, targets), axis=0 )
+
+        total_loss = ( mse_loss@weights[:-1] / len(weights[:-1]) ) + self.loss_fn_spikes(predictions_spike,targets_spike) * weights[-1] 
+        total_loss = total_loss.to(device="cuda")
+
+        return total_loss
+
     def forward(self, inputs, diversity=False):
         batch_size = inputs.shape[0]
         expert_outputs = self.calculating_experts(inputs)
@@ -329,7 +358,8 @@ class MMoE(pl.LightningModule):
         predictions = self(data)
         predictions_spike, targets_spike = predictions[:,639], targets[:,639,-1]
         predictions, targets = torch.cat([predictions[:,:639],predictions[:,640,None]],1), torch.cat([targets[:,:639,-1],targets[:,640,-1,None]],1)
-        loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
+        #loss = self.loss_fn(predictions, targets) + self.loss_fn_spikes(predictions_spike,targets_spike)
+        loss = self.balanced_loss_function(predictions, predictions_spike, targets, targets_spike) # Here we gather the balanced loss for each compartment. 
         return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
 
 
