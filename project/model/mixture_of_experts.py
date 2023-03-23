@@ -124,6 +124,9 @@ class MH(pl.LightningModule):
 
         return shared_bottom_outputs
 
+    def compute_element_errors(self, pred_out, true_out):
+        return torch.mean((pred_out-true_out)**2,0)
+
     def training_step(self, batch, batch_idx):
         data, targets = batch['data'], batch['target']
         predictions = self(data)
@@ -151,11 +154,14 @@ class MH(pl.LightningModule):
         return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
 
     def validation_step_end(self, outputs):
+        element_errors = self.compute_element_errors(outputs['predictions'],outputs['targets'])
         self.validation_metric(outputs['predictions'], outputs['targets'])
         self.validation_metric_spike(F.softmax(outputs['predictions_spike']).int(),outputs['targets_spike'].int())
         self.log('loss/val', outputs['loss'])
         self.log('metric/val', self.validation_metric)
         self.log('metric/val/spike',self.validation_metric_spike)
+        self.log('metric/val/element_errors',element_errors)
+
 
     def test_step(self, batch, batch_idx):
         data, targets = batch['data'], batch['target']
@@ -361,6 +367,9 @@ class MMoE(pl.LightningModule):
         diversity_determinant = torch.linalg.det(diversity_matrix)
         diversity_permanent = dm.permanent(diversity_matrix)
         return diversity_score, diversity_determinant, diversity_permanent
+    
+    def compute_element_errors(self, pred_out, true_out):
+        return torch.mean((pred_out-true_out)**2,0)
 
     def training_step(self, batch, batch_idx):
         data, targets = batch['data'], batch['target']
@@ -390,12 +399,15 @@ class MMoE(pl.LightningModule):
 
     def validation_step_end(self, outputs):
         expert_output = self.calculating_experts(outputs['current_batch'])
+        element_errors = self.compute_element_errors(outputs['predictions'],outputs['targets'])
         diversity_score, diversity_determinant, diversity_permanent = self.compute_diversity(expert_output)
         self.validation_metric(outputs['predictions'], outputs['targets'])
         self.validation_metric_spike(F.softmax(outputs['predictions_spike']).int(),outputs['targets_spike'].int())
         self.log('loss/val', outputs['loss'])
         self.log('metric/val', self.validation_metric)
         self.log('metric/val/spike',self.validation_metric_spike)
+        for i in range(len(element_errors)):
+            self.log('metric/val/element_errors_'+str(i),element_errors[i])
         self.log('diversity/val/score', diversity_score)
         self.log('diversity/val/determinant',diversity_determinant)
         self.log('diversity/val/permanent',diversity_permanent)

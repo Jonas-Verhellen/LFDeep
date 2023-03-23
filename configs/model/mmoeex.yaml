@@ -18,3 +18,4 @@ config:
   optimizer: configs/optim/adam.yaml
   prob_exclusivity: 0.5
   type: exclusivity
+  balancer: configs/model/balancing.yaml
