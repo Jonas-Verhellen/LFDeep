@@ -66,9 +66,12 @@ class TemporalConvNet(pl.LightningModule):
         num_levels = len(self.num_channels)
         for i in range(num_levels):
             dilation_size = 2 ** i
-            in_channels = self.num_inputs if i == 0 else self.num_channels[i-1]
+            in_channels = self.num_inputs if i == 0 else self.num_channels[i-1] # For first block we use input length.
             out_channels = self.num_channels[i]
             layers += [TemporalBlock(in_channels, out_channels, self.kernel_size, stride=1, dilation=dilation_size, padding=(self.kernel_size-1) * dilation_size, dropout=self.dropout)]
+            # [TemporalBlock(1918, 32, 10, stride = 1, dilation =  1, padding= (10-1)*1), 0.2 ]
+            # [TemporalBlock(32, 16, 10, stride = 1, dilation =  1, padding= (10-1)*1), 0.2 ]
+            # [TemporalBlock(16, 8, 10, stride = 1, dilation =  1, padding= (10-1)*1), 0.2 ]
         self.network = nn.Sequential(*layers)
 
     def forward(self, x):

@@ -5,10 +5,10 @@ config:
   num_tasks: 641
   num_experts: 5
   num_layers: 1
-  num_units: 100
+  num_units: 10
 
   sequence_len: 100
-  num_features: 1278
+  num_features: 1918 #1278
   lstm_layers: 3
 
   use_expert_bias: yes
@@ -16,6 +16,6 @@ config:
 
   expert: configs/model/tcn.yaml
   optimizer: configs/optim/adam.yaml
-  prob_exclusivity: 0.5
+  prob_exclusivity: 0.1 #0.5
   type: exclusivity
   balancer: configs/model/balancing.yaml

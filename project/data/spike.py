@@ -26,7 +26,7 @@ class SpikeDataset(Dataset):
         sample = {'data': data_sample, 'target': target_sample}
         return sample
 
-class SpikeDataModule(pl.LightningDataModule):
+class SpikeDataModule(pl.LightningDataModule): # This is what is used as input data
     def __init__(self, config):
         super().__init__()
         self.prepare_data_per_node = True

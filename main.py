@@ -24,7 +24,7 @@ def main(config: DictConfig) -> None:
     callbacks = [checkpoint_callback, early_stopping_callback]
 
     trainer = pl.Trainer(**OmegaConf.to_container(config.trainer),  logger=tensorboard, callbacks=callbacks, auto_lr_find=True, precision=16, accelerator='gpu', devices=4, strategy="ddp")
-    trainer.fit(model, datamodule=data_module) 
+    trainer.fit(model, datamodule=data_module) # This method calls on the forward function and uses dataloader as input. 
     trainer.test(model, datamodule=data_module)  # Optional
 
 

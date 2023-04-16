@@ -33,7 +33,7 @@ class MH(pl.LightningModule):
 
         # The config.expert calls on function TemporalConvNet from temporal_convolution file.
         self.shared_bottom = hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.expert)))
-        self.tcn_output_size = self.shared_bottom.num_channels[-1]*self.sequence_len
+        self.tcn_output_size = self.shared_bottom.num_channels[-1]*self.sequence_len # Produces tcn output size: 8 * 100
         #self.expert_kernels_lstm = nn.LSTM(self.tcn_output_size,self.num_hidden_lstm,self.num_layers_lstm)
 
         self.input_list = nn.ModuleList([nn.Linear(self.tcn_output_size, self.num_units) for _ in range(self.num_tasks)])
@@ -65,6 +65,10 @@ class MH(pl.LightningModule):
         task_losses = torch.zeros(self.num_tasks) # Here we will store our task loss values. 
         with torch.no_grad():
             for batch in range(predictions.shape[0]):
+                loss_spike = self.loss_fn_spikes(predictions_spike[batch], targets_spike[batch])
+                task_losses[-1] = loss_spike * lamb[-1]
+                self.balancer.get_initial_loss(task_losses[-1], self.num_tasks-1)
+
                 for task in range(self.num_tasks-1):
                     loss = self.loss_fn(predictions[batch, task], targets[batch, task])
                     task_losses[task] = loss * lamb[task] # Have to calculate the loss for each task.
@@ -74,9 +78,9 @@ class MH(pl.LightningModule):
 
                     self.balancer.LBTW(task_losses[task], task)
 
-                loss_spike = self.loss_fn_spikes(predictions_spike[batch], targets_spike[batch])
-                task_losses[-1] = loss_spike * lamb[-1]
                 self.balancer.LBTW(task_losses[-1], self.num_tasks-1)
+                # Would it make a difference to move the spike section over the initilaization of the
+                # the initial losses? 
                     
                 weights = torch.Tensor(self.balancer.get_weights())
 
@@ -90,7 +94,7 @@ class MH(pl.LightningModule):
         weights = weights.to(device="cuda")
         task_losses = task_losses.to(device="cuda")
         task_losses.requires_grad=True
-        mse_loss = torch.mean( nn.MSELoss(reduce = False)(predictions, targets), axis=0 )
+        mse_loss = torch.mean( nn.MSELoss(reduce = False)(predictions, targets), axis=0 ) # Mean over all the batches. 
 
         total_loss = ( mse_loss@weights[:-1] / len(weights[:-1]) ) + self.loss_fn_spikes(predictions_spike,targets_spike) * weights[-1] 
         total_loss = total_loss.to(device="cuda")
@@ -138,6 +142,8 @@ class MH(pl.LightningModule):
         return {'loss': loss, 'predictions': predictions, 'targets': targets, 'predictions_spike': predictions_spike, 'targets_spike': targets_spike}
 
     def training_step_end(self, outputs):
+        """ This is called after the training_step method has been called for all batches in the current epoch. We
+        use it for logging before we move on to the next epoch."""
         self.training_metric(outputs['predictions'], outputs['targets'])
         self.training_metric_spike(F.softmax(outputs['predictions_spike']).int(),outputs['targets_spike'].int())
         self.log('loss/train', outputs['loss'])
@@ -213,15 +219,17 @@ class MMoE(pl.LightningModule):
         self.output_list = nn.ModuleList([nn.Linear(self.num_units, 1) for _ in range(self.num_tasks)])
 
         if self.use_expert_bias:
+            """ Here we set a bias parameter for the experts that pytoch lightning keeps track of and updates."""
             self.expert_bias = nn.Parameter(torch.zeros(self.num_experts, self.tcn_output_size), requires_grad=True)
 
         gate_kernels = torch.rand((self.num_tasks, self.tcn_output_size, self.num_experts)).float()
         self.gate_kernels = nn.Parameter(gate_kernels, requires_grad=True)
 
         if self.use_gate_bias:
+            """ Set bias for the gates"""
             self.gate_bias = nn.Parameter(torch.zeros(self.num_tasks, 1, self.num_experts), requires_grad=True)
 
-        self.task_bias = nn.Parameter(torch.zeros(self.num_tasks), requires_grad=True)
+        self.task_bias = nn.Parameter(torch.zeros(self.num_tasks), requires_grad=True) # Set task biases. 
 
         self.loss_fn = nn.MSELoss()
         self.loss_fn_spikes = nn.BCEWithLogitsLoss()
@@ -235,6 +243,7 @@ class MMoE(pl.LightningModule):
 
          # Here we add an optional balancing method which we use the adjust the losses of the different tasks. 
         self.balancer = hydra.utils.instantiate(OmegaConf.load(hydra.utils.to_absolute_path(config.balancer)))
+        #self.weig = 0
 
     def balanced_loss_function(self, predictions, predictions_spike, targets, targets_spike):
         """Here we want to create our own loss function which should calculate the loss for each compartment
@@ -246,6 +255,10 @@ class MMoE(pl.LightningModule):
         task_losses = torch.zeros(self.num_tasks) # Here we will store our task loss values. 
         with torch.no_grad():
             for batch in range(predictions.shape[0]):
+                loss_spike = self.loss_fn_spikes(predictions_spike[batch], targets_spike[batch])
+                task_losses[-1] = loss_spike * lamb[-1]
+                self.balancer.get_initial_loss(task_losses[-1], self.num_tasks-1)
+
                 for task in range(self.num_tasks-1):
                     loss = self.loss_fn(predictions[batch, task], targets[batch, task])
                     task_losses[task] = loss * lamb[task] # Have to calculate the loss for each task.
@@ -255,8 +268,6 @@ class MMoE(pl.LightningModule):
 
                     self.balancer.LBTW(task_losses[task], task)
 
-                loss_spike = self.loss_fn_spikes(predictions_spike[batch], targets_spike[batch])
-                task_losses[-1] = loss_spike * lamb[-1]
                 self.balancer.LBTW(task_losses[-1], self.num_tasks-1)
                     
                 weights = torch.Tensor(self.balancer.get_weights())
@@ -269,6 +280,7 @@ class MMoE(pl.LightningModule):
             raise ValueError("Loss contains infinite values")
 
         weights = weights.to(device="cuda")
+        #self.weig = weights
         task_losses = task_losses.to(device="cuda")
         task_losses.requires_grad=True
         mse_loss = torch.mean( nn.MSELoss(reduce = False)(predictions, targets), axis=0 )
@@ -321,7 +333,9 @@ class MMoE(pl.LightningModule):
 
     def calculating_gates(self, inputs, batch_size):
         """
-        Calculating the gates, g^{k}(x) = activation(W_{gk} * x + b), where activation is softmax according to the paper T x n x E
+        Calculating the gates, g^{k}(x) = activation(W_{gk} * x + b), where activation is softmax according to the paper T x n x E. 
+        gate outputs are found by doing a matrix multiplication between the compressed inputs and the gate kernels
+        for index = 0 and between gate outputs and compressed inputs for the remaining indicies. 
         """
         compressed_inputs = self.compressor(inputs)
         
@@ -334,7 +348,7 @@ class MMoE(pl.LightningModule):
         if self.use_gate_bias:
             gate_outputs = gate_outputs.add(self.gate_bias)
 
-        gate_outputs = F.softmax(gate_outputs, dim=2)
+        gate_outputs = F.softmax(gate_outputs, dim=2) # Dim=2 --> Normalizes values along axis 2.
         return gate_outputs
 
     def multiplying_gates_and_experts(self, expert_outputs, gate_outputs):
@@ -389,7 +403,7 @@ class MMoE(pl.LightningModule):
         self.log('metric/train/spike', self.training_metric_spike)
 
     def validation_step(self, batch, batch_idx):
-        data, targets = batch['data'], batch['target']
+        data, targets = ['data'], batch['target']
         with torch.no_grad():
             predictions = self(data)
             predictions_spike, targets_spike = predictions[:,639], targets[:,639,-1]
