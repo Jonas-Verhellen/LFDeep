@@ -68,7 +68,6 @@ class MH(pl.LightningModule):
                 loss_spike = self.loss_fn_spikes(predictions_spike[batch], targets_spike[batch])
                 task_losses[-1] = loss_spike * lamb[-1]
                 self.balancer.get_initial_loss(task_losses[-1], self.num_tasks-1)
-
                 for task in range(self.num_tasks-1):
                     loss = self.loss_fn(predictions[batch, task], targets[batch, task])
                     task_losses[task] = loss * lamb[task] # Have to calculate the loss for each task.
@@ -78,10 +77,9 @@ class MH(pl.LightningModule):
 
                     self.balancer.LBTW(task_losses[task], task)
 
+                
                 self.balancer.LBTW(task_losses[-1], self.num_tasks-1)
-                # Would it make a difference to move the spike section over the initilaization of the
-                # the initial losses? 
-                    
+
                 weights = torch.Tensor(self.balancer.get_weights())
 
                 lamb = weights
@@ -166,7 +164,9 @@ class MH(pl.LightningModule):
         self.log('loss/val', outputs['loss'])
         self.log('metric/val', self.validation_metric)
         self.log('metric/val/spike',self.validation_metric_spike)
-        self.log('metric/val/element_errors',element_errors)
+        #self.log('metric/val/element_errors',element_errors)
+        for i in range(len(element_errors)):
+            self.log('metric/val/element_errors_'+str(i),element_errors[i])
 
 
     def test_step(self, batch, batch_idx):
@@ -258,7 +258,6 @@ class MMoE(pl.LightningModule):
                 loss_spike = self.loss_fn_spikes(predictions_spike[batch], targets_spike[batch])
                 task_losses[-1] = loss_spike * lamb[-1]
                 self.balancer.get_initial_loss(task_losses[-1], self.num_tasks-1)
-
                 for task in range(self.num_tasks-1):
                     loss = self.loss_fn(predictions[batch, task], targets[batch, task])
                     task_losses[task] = loss * lamb[task] # Have to calculate the loss for each task.
@@ -268,6 +267,8 @@ class MMoE(pl.LightningModule):
 
                     self.balancer.LBTW(task_losses[task], task)
 
+                #loss_spike = self.loss_fn_spikes(predictions_spike[batch], targets_spike[batch])
+                #task_losses[-1] = loss_spike * lamb[-1]
                 self.balancer.LBTW(task_losses[-1], self.num_tasks-1)
                     
                 weights = torch.Tensor(self.balancer.get_weights())
@@ -403,7 +404,7 @@ class MMoE(pl.LightningModule):
         self.log('metric/train/spike', self.training_metric_spike)
 
     def validation_step(self, batch, batch_idx):
-        data, targets = ['data'], batch['target']
+        data, targets = batch['data'], batch['target']
         with torch.no_grad():
             predictions = self(data)
             predictions_spike, targets_spike = predictions[:,639], targets[:,639,-1]
