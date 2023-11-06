@@ -42,9 +42,9 @@ Important dependencies of the LFDeep software environment and where to find the 
 
 * [Python](https://www.python.org/) - Python is a widely used scientific and numeric programming language.
 * [Omegaconf](https://github.com/omry/omegaconf) - Configuration system for multiple sources, providing a consistent API.
-* [PyTorch](https://pytorch.org/) - An open-source deep learning framework that provides a flexible and efficient platform for building and training neural networks.
+* [PyTorch](https://pytorch.org/) - An open-source deep learning framework that provides a platform for building and training neural networks.
 * [PyTorch Lightning](https://pytorch-lightning.readthedocs.io/en/latest/) - A lightweight PyTorch wrapper that simplifies the training and evaluation of deep learning models.
-* [Hydra](https://hydra.cc/) - A framework for elegantly configuring complex applications, which simplifies the management of configuration and parameters.
+* [Hydra](https://hydra.cc/) - A framework for elegantly configuring complex applications, simplifies the management of configuration and parameters.
 
 ## Authors
 
