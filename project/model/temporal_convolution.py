@@ -28,7 +28,6 @@ class Chomp1d(pl.LightningModule):
         Returns:
             torch.Tensor: The input tensor with right-most elements removed.
         """
-
         return x[:, :, :-self.chomp_size].contiguous()
 
 class TemporalBlock(pl.LightningModule):
