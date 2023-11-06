@@ -27,6 +27,25 @@ from scipy import spatial
 
 
 class TensorboardWriter:
+    """
+    A class for managing Tensorboard logging.
+
+    This class simplifies the setup and usage of Tensorboard for logging training and evaluation metrics.
+
+    Args:
+        path_logger (str): The directory path for saving Tensorboard logs.
+        name_config (str): The name of the configuration or experiment.
+
+    Attributes:
+        writer: The SummaryWriter instance for writing Tensorboard logs.
+
+    Methods:
+        get_date(): Get the current date and time formatted as a string.
+        get_home_dir(): Get the home directory path.
+        add_scalar(name_metric, value_metric, epoch): Add a scalar value to the Tensorboard log.
+        end_writer(): Flush the Tensorboard writer to ensure all pending events are written to disk.
+
+    """
     def __init__(self, path_logger, name_config):
         date = self.get_date()
         full_path = (
@@ -35,20 +54,41 @@ class TensorboardWriter:
         print("Tensorboard folder path - {}".format(full_path))
         self.writer = SummaryWriter(log_dir=full_path)
 
-    # Add day, month and year to path
     def get_date(self):
+        """
+        Get the current date and time formatted as a string.
+
+        Returns:
+            str: The formatted date and time string.
+        """
         now = datetime.now()  # Current date and time (Hour, minute)
         date = now.strftime("%Y_%m_%d_%H_%M")
         return date
 
     def get_home_dir(self):
+        """
+        Get the home directory path.
+
+        Returns:
+            str: The path to the home directory.
+        """
         return os.getenv("HOME")
 
     def add_scalar(self, name_metric, value_metric, epoch):
+        """
+        Add a scalar value to the Tensorboard log.
+
+        Args:
+            name_metric (str): The name of the metric to log.
+            value_metric (float): The value of the metric.
+            epoch (int): The current epoch or step number.
+        """
         self.writer.add_scalar(name_metric, value_metric, epoch)
 
     def end_writer(self):
-        # Make sure all pending events have been written to disk
+        """
+        Flush the Tensorboard writer to ensure all pending events are written to disk.
+        """
         self.writer.flush()
 
 
@@ -65,9 +105,27 @@ def metrics_mimic(
     B=1000,
 ):
     """
-    This function is specific for the tasks in MIMIC
-    Input: current LSTM model
-    Output: AUC according to metric adopted, loss if criterior != None
+    Calculate metrics for MIMIC tasks.
+
+    This function calculates metrics for MIMIC tasks, including AUC and loss if a criterion is provided.
+    
+    Args:
+        epoch (int): The current epoch number.
+        data_loader: The data loader providing the dataset for evaluation.
+        model: The model for evaluation.
+        device (str): The device (e.g., 'cpu' or 'cuda') to perform calculations.
+        tasksname (list of str): A list of task names.
+        criterion: The criterion for calculating loss (if None, loss won't be calculated).
+        training (bool): Whether the model is being evaluated during training (default: False).
+        validation (bool): Whether validation metrics should be calculated (default: False).
+        testing (bool): Whether testing metrics should be calculated (default: False).
+        B (int): The batch size for calculations (default: 1000).
+
+    Returns:
+        tuple: A tuple containing the following data:
+        - auc_per_task (list of float): AUC values for each task.
+        - loss_per_task (list of float): Loss values for each task (if validation is True).
+        - conf_interval_95 (list of tuple): Confidence intervals for AUC (if testing is True).
     """
     # Initialization of arrays
     y_pred_t0, y_pred_t1, y_pred_t2, y_pred_t3 = [], [], [], []
@@ -242,7 +300,20 @@ def metrics_mimic(
 
 def flat_list(array1, array2, array3=None):
     """
-    Auxiliary function use by metrics_mimic.
+    Flatten and concatenate lists or arrays.
+
+    This auxiliary function is used by `metrics_mimic` to flatten and concatenate one or more lists or arrays.
+
+    Args:
+        array1: The first list or array to flatten and concatenate.
+        array2: The second list or array to flatten and concatenate.
+        array3: (Optional) The third list or array to flatten and concatenate (default: None).
+
+    Returns:
+        tuple: A tuple containing the following data:
+        - array1_flat: The first array after flattening and converting to a numpy array.
+        - array2_flat: The second array after flattening and converting to a numpy array.
+        - array3_flat: The third array after flattening and converting to a numpy array (if provided, otherwise None).
     """
     array1 = np.concatenate(array1).ravel().tolist()
     array2 = np.concatenate(array2).ravel().tolist()
@@ -255,9 +326,20 @@ def flat_list(array1, array2, array3=None):
 
 def mimic_validation_loss(y_pred, y_obs, task, device, criterion, los=False):
     """
-    Auxiliary function use by metrics_mimic.
-    Input: observed and predicted values, task number, criterion
-    Output: loss
+    Calculate the validation loss for MIMIC tasks.
+
+    This auxiliary function is used by `metrics_mimic` to calculate the validation loss for MIMIC tasks.
+
+    Args:
+        y_pred: The predicted values.
+        y_obs: The observed values.
+        task (int): The task number.
+        device (str): The device (e.g., 'cpu' or 'cuda') for tensor calculations.
+        criterion: The criterion for calculating the loss.
+        los (bool): Whether the task is "los" (default: False).
+
+    Returns:
+        float: The validation loss.
     """
     y_pred = torch.tensor(y_pred).to(device)
     y_obs = torch.tensor(y_obs).to(device)
@@ -277,8 +359,24 @@ def metrics_census(
     train=False,
 ):
     """
-    Input: current model (ends in a classification task)
-    Output: AUC according to metric adopted, loss if criterion != None
+    Calculate metrics for the Census classification task.
+
+    This function calculates metrics for the Census classification task, including AUC and loss (if a criterion is provided).
+
+    Args:
+        epoch (int): The current epoch number.
+        data_loader: The data loader providing the dataset for evaluation.
+        model: The classification model for evaluation.
+        device (str): The device (e.g., 'cpu' or 'cuda') to perform calculations.
+        criterion: The criterion for calculating loss (if None, loss won't be calculated).
+        confidence_interval (bool): Whether to calculate confidence intervals (default: False).
+        train (bool): Whether the model is being evaluated during training (default: False).
+
+    Returns:
+        tuple: A tuple containing the following data:
+        - auc_aux (list of float): AUC values for each task.
+        - conf_interval_95 (list of tuple): Confidence intervals for AUC (if confidence_interval is True).
+        - loss_val (list of float): Loss values for each task (if criterion is provided).
     """
 
     auc_aux = []
@@ -357,8 +455,24 @@ def metrics_pcba(
     train=False,
 ):
     """
-    Input: current model (ends in a classification task)
-    Output: AUC according to metric adopted, loss if criterion != None
+    Calculate metrics for the PCBA classification task.
+
+    This function calculates metrics for the PCBA classification task, including AUC and loss (if a criterion is provided).
+
+    Args:
+        epoch (int): The current epoch number.
+        data_loader: The data loader providing the dataset for evaluation.
+        model: The classification model for evaluation.
+        device (str): The device (e.g., 'cpu' or 'cuda') to perform calculations.
+        criterion: The criterion for calculating loss (if None, loss won't be calculated).
+        confidence_interval (bool): Whether to calculate confidence intervals (default: False).
+        train (bool): Whether the model is being evaluated during training (default: False).
+
+    Returns:
+        tuple: A tuple containing the following data:
+        - auc_aux (list of float): AUC values for each task.
+        - conf_interval_95 (list of tuple): Confidence intervals for AUC (if confidence_interval is True).
+        - loss_val (list of float): Loss values for each task (if criterion is provided).
     """
     auc_aux = []
     loss_val = []
@@ -454,6 +568,21 @@ def metrics_newdata(
     confidence_interval=False,
     train=False,
 ):
+    """
+    Placeholder function for calculating metrics on new data.
+
+    Args:
+        epoch (int): The current epoch number.
+        data_loader: The data loader providing the dataset for evaluation.
+        model: The model for evaluation.
+        device (str): The device (e.g., 'cpu' or 'cuda') to perform calculations.
+        criterion: The criterion for calculating loss (if None, loss won't be calculated).
+        confidence_interval (bool): Whether to calculate confidence intervals (default: False).
+        train (bool): Whether the model is being evaluated during training (default: False).
+
+    Returns:
+        tuple: A tuple containing placeholder values, typically empty strings. The structure of the tuple depends on the presence of criterion and confidence_interval flags.
+    """
     print("NOT IMPLEMENTED")
     if criterion is None:
         return "", ""
@@ -465,9 +594,29 @@ def maml_split(
     batch, model, device, prop=0.66, time=False, seqlen=None, data_pcba=False
 ):
     """
-    Make a data split to fit nicely on the MAML-MTL approach when working with MMoEEx
-    Input: Batch, model, prop is the size proportion for inner:outer loss
-    Output: batch splited into inner and outer data
+    Splits a batch of data for the MAML-MTL approach, especially when working with MMoEEx.
+
+    Args:
+        batch: The input batch of data to split.
+        model: The model used for prediction.
+        device (str): The device (e.g., 'cpu' or 'cuda') to perform calculations.
+        prop (float): The size proportion for the inner data (default: 0.66).
+        time (bool): Whether the dataset is a time-based dataset (default: False).
+        seqlen (int): The sequence length for time-based datasets (required if time is True).
+        data_pcba (bool): Indicates whether the dataset is the PCBA dataset (default: False).
+
+    Returns:
+        tuple: A tuple containing the split data and labels, which depends on the dataset and time flag:
+            - For non-time-based datasets:
+                - data_inner_pred: The inner data predicted by the model.
+                - label_inner: The inner data labels.
+                - data_outer: The outer data.
+                - label_outer: The outer data labels.
+            - For time-based datasets:
+                - data_inner_pred: The inner data predicted by the model.
+                - label_inner: A list containing inner data labels.
+                - data_outer: The outer data.
+                - label_outer: A list containing outer data labels.
     """
     inner_size = int(batch[0].shape[0] * prop)
     data_inner = batch[0][0:inner_size, :].to(device)
@@ -509,8 +658,14 @@ def maml_split(
 
 def keep_exclusivity(model):
     """
-    Set to zero gradients of closed connections between gates and experts.
-    Required if using MMoEEx or MD with Exclusivity
+    Sets the gradients to zero for closed connections between gates and experts.
+    This is required when using MMoEEx or MD with Exclusivity.
+
+    Args:
+        model: The PyTorch model with MMoEEx or MD layers.
+
+    Returns:
+        tuple: A tuple containing the gradients for gate kernels and gate bias after setting them to zero.
     """
     for index, e in enumerate(model.MMoEEx.exclusivity):
         if e < model.num_tasks + 1:  # if not shared
@@ -526,8 +681,14 @@ def keep_exclusivity(model):
 
 def keep_exclusion(model):
     """
-    Set to zero gradients of closed connections between gates and experts.
-    Required if using MMoEEx or MD with Exclusion
+    Set the gradients to zero for closed connections between gates and experts.
+    This is required when using MMoEEx or MD with Exclusion.
+
+    Args:
+        model: The PyTorch model with MMoEEx or MD layers.
+
+    Returns:
+        tuple: A tuple containing the gradients for gate kernels and gate bias after setting them to zero.
     """
     for index, e in enumerate(model.MMoEEx.exclusivity):
         if e < model.num_tasks + 1:  # if not shared
@@ -542,32 +703,21 @@ def keep_exclusion(model):
 def gradient_update_parameters(
     model, loss, params=None, step_size=0.05, first_order=False
 ):
-    """Update of the parameters with one step of gradient descent on the loss function.
-    Adapted to work with our model.
+    """
+    Update model parameters with one step of gradient descent on the loss function.
 
     Reference:
-    https://github.com/tristandeleu/pytorch-meta/blob/6db28dc9e7e22c8f6239169c2ce0761e87d5a1b3/torchmeta/utils/gradient_based.py#L7
+        https://github.com/tristandeleu/pytorch-meta/blob/6db28dc9e7e22c8f6239169c2ce0761e87d5a1b3/torchmeta/utils/gradient_based.py#L7
 
-    Parameters
-    ----------
-    model :
-    loss : `torch.Tensor` instance
-        The value of the inner-loss. This is the result of the training dataset
-        through the loss function.
-    params : `collections.OrderedDict` instance, optional
-        Dictionary containing the meta-parameters of the model. If `None`, then
-        the values stored in `model.meta_named_parameters()` are used. This is
-        useful for running multiple steps of gradient descent as the inner-loop.
-    step_size : int, `torch.Tensor`, or `collections.OrderedDict` instance (default: 0.5)
-        The step size in the gradient update. If an `OrderedDict`, then the
-        keys must match the keys in `params`.
-    first_order : bool (default: `False`)
-        If `True`, then the first order approximation of MAML is used.
-    Returns
-    -------
-    updated_params : `collections.OrderedDict` instance
-        Dictionary containing the updated meta-parameters of the model, with one
-        gradient update wrt. the inner-loss.
+    Parameters:
+        model (torch.nn.Module): The model for which parameters need to be updated.
+        loss (torch.Tensor): The value of the inner loss. This is the result of the training dataset through the loss function.
+        params (OrderedDict, optional): Dictionary containing the meta-parameters of the model. If None, the values stored in `model.named_parameters()` are used.
+        step_size (float or OrderedDict, optional): The step size in the gradient update. If an OrderedDict, the keys must match the keys in `params`.
+        first_order (bool, optional): If True, use the first-order approximation of MAML.
+
+    Returns:
+        updated_params (OrderedDict): Dictionary containing the updated meta-parameters of the model with one gradient update wrt. the inner loss.
     """
 
     if params is None:
@@ -599,8 +749,19 @@ def organizing_predictions(
     model, params, train_y_pred, obs, task, name=None, weight=None
 ):
     """
-    Organize the predictions for the criterion in main.py
-    Output: pred and obs array
+    Organize model predictions and observed values based on the specified parameters and data type.
+
+    Parameters:
+        model (torch.nn.Module): The model used for prediction.
+        params (dict): A dictionary containing parameters related to the dataset and tasks.
+        train_y_pred (torch.Tensor): The model's predictions.
+        obs (torch.Tensor): The observed values.
+        task (int): The index of the task.
+        name (str, optional): Name of the task (for use in mimic dataset).
+        weight (torch.Tensor, optional): Weight values for data filtering (for use in pcba dataset).
+
+    Returns:
+        Tuple: A tuple containing the organized model predictions and observed values.
     """
     if params["data"] == "census":
         return train_y_pred, obs[:, task].float().reshape(-1, 1)
@@ -635,11 +796,13 @@ def organizing_predictions(
 
 def model_CI(ci_test, model):
     """
-    Calculate confidence interval for multiple runs of the model
-    Input:
-        ci_test: testing AUC x task x run
-        model: current model (to use parameters only)
-    Output:
+    Calculate confidence interval for multiple runs of the model.
+
+    Parameters:
+        ci_test (numpy.ndarray): Testing AUC values with shape (runs, tasks).
+        model (torch.nn.Module): The current model (used for parameters).
+
+    Returns:
         None
     """
     ic_final_ = model_CI_boostrap(ci_test, boostrap=False)
@@ -661,8 +824,16 @@ def model_CI(ci_test, model):
 
 def boostrap(task, pred, obs, B=100):
     """
-    Calculates several AUCs for a given task using boostrap
-    Less time and memory consuming than several runs of the model
+    Calculate AUC or other metrics for a given task using bootstrap resampling.
+
+    Parameters:
+        task (str): The name of the task ('pheno', 'los', or other).
+        pred (numpy.ndarray): Predicted values.
+        obs (numpy.ndarray): Observed (true) values.
+        B (int): Number of bootstrap resamples (default: 100).
+
+    Returns:
+        tuple: Lower and upper bounds of the confidence interval for the given metric.
     """
     repetitions = []
     prob = 0.75
@@ -698,10 +869,15 @@ def boostrap(task, pred, obs, B=100):
 
 def model_CI_boostrap(repetitions, bootstrap=True):
     """
-    Calculating the 95% confidence interval
-    Used by model_CI and boostrap functions
-    Input: Array with repetitions
-    Output: confidence interval for the input's array
+    Calculate the 95% confidence interval for an array of repetitions.
+
+    Parameters:
+        repetitions (numpy.ndarray): An array containing repeated measurements.
+        bootstrap (bool): If True, use bootstrapping for confidence interval calculation.
+                          If False, use the formula-based method (default: True).
+
+    Returns:
+        list: Lower and upper bounds of the 95% confidence interval.
     """
     if bootstrap:
         confidence_interval = np.quantile(repetitions, [0.025, 0.975], axis=0)
@@ -726,6 +902,41 @@ def output_file_creation(
     params,
     precision_auc_test,
 ):
+    """
+    Create a DataFrame containing metrics and parameters for model evaluation and experimentation.
+
+    Parameters:
+    -----------
+    rep : int
+        The repetition number.
+    num_tasks : int
+        The number of tasks (e.g., classification targets).
+    auc_test : list
+        A list of test AUC (Area Under the ROC Curve) values, one per task.
+    auc_val : list
+        A list of validation AUC values, one per task.
+    auc_train : list
+        A list of training AUC values, one per task.
+    conf_interval : list
+        A list of confidence intervals for test AUC, one per task.
+    rep_start : float
+        The start time of the repetition.
+    params : dict
+        A dictionary containing various experiment parameters and settings.
+    precision_auc_test : list
+        A list of precision values for test AUC, one per task.
+
+    Returns:
+    --------
+    data_output : pandas.DataFrame
+        A DataFrame containing the specified metrics and parameters.
+
+    Note:
+    -----
+    This function creates a DataFrame with columns for repetition, AUC values, confidence intervals,
+    time taken, and various experiment parameters. It's useful for organizing and recording
+    results during experimentation and model evaluation.
+    """
     print("...output file creation")
     names = {"repetition"}
     _output = {"repetition": rep}
@@ -800,7 +1011,24 @@ def output_file_creation(
 
 def try_keyerror(name, params):
     """
-    Auxiliary function to check if key exists in the parameters config file
+    Check if a key exists in the parameters dictionary and return its value if present.
+
+    Parameters:
+    -----------
+    name : str
+        The name of the key to check in the dictionary.
+    params : dict
+        The dictionary containing parameters and their values.
+
+    Returns:
+    --------
+    str or any
+        The value associated with the specified key if it exists in the dictionary; otherwise, an empty string.
+    
+    Note:
+    -----
+    This function is useful for safely accessing key-value pairs in a dictionary without raising a KeyError
+    when the key doesn't exist. If the key is not found in the dictionary, it returns an empty string.
     """
     try:
         return params[name]
@@ -810,9 +1038,39 @@ def try_keyerror(name, params):
 
 def measuring_diversity(data_loader, model, device, output_name, data):
     """
-    Calculates the diversity among the experts in the testing set
-    Input: test data loader, current model
-    Output: save the diversity among the experts
+    Calculate the diversity among the experts in the testing set and save the diversity matrix to a CSV file.
+
+    Parameters:
+    -----------
+    data_loader : DataLoader
+        The DataLoader containing the testing data.
+    model : torch.nn.Module
+        The current model used for inference.
+    device : torch.device
+        The device (CPU or GPU) on which the model is running.
+    output_name : str
+        The name of the output CSV file where the diversity matrix will be saved.
+    data : str
+        The type of dataset, which can be "census," "pcba," or "mimic."
+
+    Returns:
+    --------
+    None
+
+    Note:
+    -----
+    This function calculates the diversity among experts' predictions for the given testing dataset.
+    The diversity matrix is a square matrix where each element (i, j) represents the diversity between experts i and j.
+
+    The method used to calculate diversity may vary depending on the dataset. For "census" and "pcba," it's calculated
+    based on the Euclidean distance between expert predictions. For "mimic," only the first 400 samples are considered
+    to avoid memory errors.
+
+    The resulting diversity matrix is saved to a CSV file with the specified output name.
+
+    Example:
+    --------
+    measuring_diversity(data_loader, my_model, device, "diversity_matrix.csv", "census")
     """
 
     if data == "census":
