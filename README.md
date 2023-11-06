@@ -4,7 +4,7 @@
    
 </div>
 
-![LFDeep prediction example]([http://url/to/img.png](https://github.com/Jonas-Verhellen/LFDeep/blob/main/LFDeep.png))
+![LFDeep prediction example](https://github.com/Jonas-Verhellen/LFDeep/blob/main/LFDeep.png)
 
 ## Project Structure
 
