@@ -63,4 +63,4 @@ Important dependencies of the LFDeep software environment and where to find the 
 
 ## Copyright License
 
-This project is licensed under the GNU Affero General Public License v3.0 (AGPLv3).
+This project is licensed under the MIT license.
