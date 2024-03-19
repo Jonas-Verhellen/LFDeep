@@ -48,6 +48,11 @@ Important dependencies of the LFDeep software environment and where to find the 
 * [PyTorch Lightning](https://pytorch-lightning.readthedocs.io/en/latest/) - A lightweight PyTorch wrapper that simplifies the training and evaluation of deep learning models.
 * [Hydra](https://hydra.cc/) - A framework for elegantly configuring complex applications, simplifies the management of configuration and parameters.
 
+## Data and model checkpoints
+
+The full dataset along with checkpoints of the MMoE model can be found at:
+https://www.kaggle.com/datasets/kosiobeshkov/data-for-mmoe-prediction
+
 ## Authors
 
 * Jonas Verhellen
